@@ -13,7 +13,7 @@ func _ready():
 
 func _physics_process(delta):
 	
-	match state:
+	match (state):
 		CORRENDO:
 			pass
 		IDLE:
