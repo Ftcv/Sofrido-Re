@@ -45,6 +45,10 @@ func _physics_process(delta):
 		else:
 			if has_friction == true:
 				motion.x=lerp(motion.x,0,friction/2)
+		if motion.y < 0:
+			if Input.is_action_just_released("ui_up"): 
+				motion.y = motion.y/2
+
 
 		if Input.is_action_pressed("ui_left"):
 			$Sprite.flip_h = true
