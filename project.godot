@@ -13,7 +13,7 @@ config_version=4
 config/name="Sofrido Re"
 config/description="Jogo feito por Ftcv"
 run/main_scene="res://MyProject/project/src/Levels/Playground.tscn"
-config/icon="res://icon.png"
+config/icon="res://playericon.png"
 
 [display]
 
