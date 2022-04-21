@@ -5,7 +5,7 @@
 [ext_resource path="res://icon.png" type="Texture" id=3]
 
 [sub_resource type="RectangleShape2D" id=1]
-extents = Vector2( 101.25, 10 )
+extents = Vector2( 92, 10 )
 
 [node name="Playground" type="Node2D"]
 position = Vector2( 219, 255 )
@@ -15,11 +15,12 @@ script = ExtResource( 2 )
 player_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource( 1 )]
+position = Vector2( 0, -3 )
 
 [node name="Chao_temp" type="StaticBody2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Chao_temp"]
-position = Vector2( 19.25, 38 )
+position = Vector2( 20, 38 )
 shape = SubResource( 1 )
 
 [node name="Sprite" type="Sprite" parent="Chao_temp"]
@@ -31,11 +32,11 @@ offset = Vector2( -14.9841, -1.6842 )
 [node name="Chao_temp2" type="StaticBody2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Chao_temp2"]
-position = Vector2( 313.5, 8 )
+position = Vector2( 313.5, 12 )
 shape = SubResource( 1 )
 
 [node name="Sprite" type="Sprite" parent="Chao_temp2"]
-position = Vector2( 359.218, 6 )
-scale = Vector2( 2.98437, 0.296875 )
+position = Vector2( 355.409, 10 )
+scale = Vector2( 2.79688, 0.296875 )
 texture = ExtResource( 3 )
 offset = Vector2( -14.9841, -1.6842 )

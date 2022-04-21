@@ -1,9 +1,9 @@
 extends KinematicBody2D
 
-var max_walk_speed = 200
+var max_walk_speed 
 var gravity = 150
 var jump_speed = - 100
-var acceleration = 20 # quanto menor maior a inercia
+var acceleration  # quanto menor maior a inercia
 var friction = 0.10 # quanto menor mais o player desliza
 var has_friction = false
 var is_alive = true
@@ -13,7 +13,7 @@ var state
 
 
 func _physics_process(delta):
-	
+	print(max_walk_speed) #DEBUG
 #	match (state):
 #		CORRENDO:
 #			pass
@@ -38,7 +38,13 @@ func _physics_process(delta):
 		motion.y += delta * gravity
 
 		if is_on_floor():
-			if Input.is_action_just_pressed("ui_up"):
+			if Input.is_action_pressed("ui_xy"):
+				max_walk_speed = 300
+				acceleration = 50
+			else:
+				max_walk_speed = 200
+				acceleration = 20
+			if Input.is_action_just_pressed("ui_zb"):
 				motion.y = jump_speed
 			if has_friction == true:
 				motion.x=lerp(motion.x,0,friction)
@@ -46,7 +52,7 @@ func _physics_process(delta):
 			if has_friction == true:
 				motion.x=lerp(motion.x,0,friction/2)
 		if motion.y < 0:
-			if Input.is_action_just_released("ui_up"): 
+			if Input.is_action_just_released("ui_zb"): 
 				motion.y = motion.y/2
 
 
