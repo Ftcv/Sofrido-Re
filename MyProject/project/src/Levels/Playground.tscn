@@ -17,18 +17,6 @@ player_path = NodePath("../Player")
 [node name="Player" parent="." instance=ExtResource( 1 )]
 position = Vector2( 0, -3 )
 
-[node name="Chao_temp" type="StaticBody2D" parent="."]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Chao_temp"]
-position = Vector2( 20, 38 )
-shape = SubResource( 1 )
-
-[node name="Sprite" type="Sprite" parent="Chao_temp"]
-position = Vector2( 62.877, 38 )
-scale = Vector2( 2.82813, 0.296875 )
-texture = ExtResource( 3 )
-offset = Vector2( -14.9841, -1.6842 )
-
 [node name="Chao_temp2" type="StaticBody2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Chao_temp2"]
@@ -37,6 +25,18 @@ shape = SubResource( 1 )
 
 [node name="Sprite" type="Sprite" parent="Chao_temp2"]
 position = Vector2( 355.409, 10 )
+scale = Vector2( 2.79688, 0.296875 )
+texture = ExtResource( 3 )
+offset = Vector2( -14.9841, -1.6842 )
+
+[node name="Chao_temp3" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Chao_temp3"]
+position = Vector2( 14, 24 )
+shape = SubResource( 1 )
+
+[node name="Sprite" type="Sprite" parent="Chao_temp3"]
+position = Vector2( 58, 24 )
 scale = Vector2( 2.79688, 0.296875 )
 texture = ExtResource( 3 )
 offset = Vector2( -14.9841, -1.6842 )

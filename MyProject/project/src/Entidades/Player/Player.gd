@@ -35,6 +35,7 @@ func _physics_process(delta):
 	if is_alive == true:
  
 		move_and_slide(motion, Vector2(0, -1))
+		
 		motion.y += gravity
 		inertia()
 		player_input()
