@@ -17,6 +17,9 @@ player_path = NodePath("../Player")
 [node name="Player" parent="." instance=ExtResource( 1 )]
 position = Vector2( 0, -3 )
 
+[node name="Camera2D" type="Camera2D" parent="Player"]
+current = true
+
 [node name="Chao_temp2" type="StaticBody2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Chao_temp2"]
