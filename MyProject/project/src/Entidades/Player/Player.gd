@@ -9,6 +9,7 @@ var has_friction = true
 var is_alive = true
 var motion = Vector2(0,0)
 var state
+var snapvector = Vector2(0,1)
 #enum {CORRENDO,IDLE,ANDANDO,NADANDO,SWING_ROPE,GLIDING,DESLIZANDO,PULANDO}
  
  
@@ -33,9 +34,9 @@ func _physics_process(delta):
 #			pass
 #
 	if is_alive == true:
- 
-		move_and_slide(motion, Vector2(0, -1))
-		
+ #p(linear_velocity: Vector2, snap: Vector2, up_direction: Vector2 = Vector2( 0, 0 ), stop_on_slope: bool = false, max_slides: int = 4, floor_max_angle: float = 0.785398, infinite_inertia: bool = true)
+
+		motion.y = move_and_slide_with_snap(motion,snapvector,Vector2(0, -1),false,4,deg2rad(65)).y
 		motion.y += gravity
 		inertia()
 		player_input()
@@ -66,8 +67,10 @@ func player_input():
 		motion.x = min(motion.x+acceleration,max_walk_speed)
  
 	if is_on_floor():
+		motion.y=0
 		if Input.is_action_just_pressed("ui_zb"):
 			motion.y = jump_speed
+			snapvector = Vector2(0,0)
 		if Input.is_action_pressed("ui_xy"):
 			max_walk_speed = 150
 			acceleration = 30
@@ -78,8 +81,8 @@ func player_input():
 		if motion.y < 0:
 			if Input.is_action_just_released("ui_zb"): 
 				motion.y = motion.y/2
- 
- 
+		snapvector = Vector2(0,6)
+
 func inertia():
 	if is_on_floor():
 		if has_friction == true:
