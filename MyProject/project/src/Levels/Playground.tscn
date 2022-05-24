@@ -91,6 +91,7 @@ player_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource( 1 )]
 position = Vector2( 0, -3 )
+scale = Vector2( 2, 2 )
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 current = true
