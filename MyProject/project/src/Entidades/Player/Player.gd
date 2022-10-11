@@ -8,38 +8,23 @@ var friction = 0.20 # quanto menor mais o player desliza
 var has_friction = true
 var is_alive = true
 var motion = Vector2(0,0)
-var state
+var state = ANDANDO
 var snapvector = Vector2(0,1)
-#enum {CORRENDO,IDLE,ANDANDO,NADANDO,SWING_ROPE,GLIDING,DESLIZANDO,PULANDO}
- 
+var glidiando = false
+enum {ANDANDO,SWING_ROPE,DESLIZANDO,MACHUCADO}
+
  
 func _physics_process(delta):
-	#print(max_walk_speed) #DEBUG
-#	match (state):
-#		CORRENDO:
-#			pass
-#		IDLE:
-#			pass
-#		ANDANDO:
-#			pass
-#		NADANDO:
-#			pass
-#		SWING_ROPE:
-#			pass
-#		GLIDING:
-#			pass
-#		DESLIZANDO:
-#			pass
-#		PULANDO:
-#			pass
-#
-	if is_alive == true:
- #p(linear_velocity: Vector2, snap: Vector2, up_direction: Vector2 = Vector2( 0, 0 ), stop_on_slope: bool = false, max_slides: int = 4, floor_max_angle: float = 0.785398, infinite_inertia: bool = true)
-
-		motion.y = move_and_slide_with_snap(motion,snapvector,Vector2(0, -1),false,4,deg2rad(65)).y
-		motion.y += gravity
-		inertia()
-		player_input()
+	print(max_walk_speed) #DEBUG
+	match (state):
+		ANDANDO:
+			andando()
+		SWING_ROPE:
+			swingando()
+		DESLIZANDO:
+			deslizando()
+		MACHUCADO:
+			machucando()
  
 	animations()
  
@@ -57,6 +42,8 @@ func animations():
 			$AnimationPlayer.play("Pulo_subindo")
 		else:
 			$AnimationPlayer.play("Pulo_caindo")
+		if glidiando:
+			$AnimationPlayer.play("gliding")
  
 func player_input():
 	if Input.is_action_pressed("ui_left"):
@@ -65,7 +52,12 @@ func player_input():
 	elif Input.is_action_pressed("ui_right"):
 		$Sprite.flip_h = false
 		motion.x = min(motion.x+acceleration,max_walk_speed)
- 
+	
+	if Input.is_action_pressed("ui_zb") and motion.y > 0:
+		glidiando = true
+	else: 
+		glidiando = false
+
 	if is_on_floor():
 		motion.y=0
 		if Input.is_action_just_pressed("ui_zb"):
@@ -94,3 +86,26 @@ func inertia():
 			motion.x=lerp(motion.x,0,friction/1.5)
 			if abs(motion.x) < 1: 
 				motion.x = 0
+
+
+func andando():
+	motion.y = move_and_slide_with_snap(motion,snapvector,Vector2(0, -1),false,4,deg2rad(65)).y
+	if glidiando:
+		motion.y += gravity/4
+		motion.y = min(motion.y,100)
+	else:
+		motion.y += gravity
+		motion.y = min(motion.y,400)
+	inertia()
+	player_input()
+
+func swingando():
+	pass
+	
+func deslizando():
+	pass
+
+func machucando():
+	pass
+
+
