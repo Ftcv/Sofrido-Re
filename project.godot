@@ -19,8 +19,8 @@ config/icon="res://playericon.png"
 
 window/size/width=640
 window/size/height=360
-window/size/test_width=1280
-window/size/test_height=720
+window/size/test_width=640
+window/size/test_height=360
 window/vsync/use_vsync=false
 window/stretch/mode="2d"
 window/stretch/aspect="keep"
