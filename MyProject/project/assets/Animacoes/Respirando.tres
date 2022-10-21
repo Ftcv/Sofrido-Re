@@ -2,7 +2,7 @@
 
 [resource]
 resource_name = "Respirando"
-length = 1.5
+length = 5.2
 loop = true
 tracks/0/type = "value"
 tracks/0/path = NodePath("Sprite:frame")
@@ -11,8 +11,8 @@ tracks/0/loop_wrap = true
 tracks/0/imported = false
 tracks/0/enabled = true
 tracks/0/keys = {
-"times": PoolRealArray( 0, 0.7 ),
-"transitions": PoolRealArray( 1, 1 ),
+"times": PoolRealArray( 0, 0.7, 1.4, 2.1, 2.8, 3.4, 3.5, 4.2 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1, 1, 1 ),
 "update": 1,
-"values": [ 16, 17 ]
+"values": [ 16, 17, 16, 17, 16, 21, 16, 17 ]
 }

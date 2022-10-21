@@ -33,17 +33,24 @@ func animations():
 		if motion.x != 0:
 			if max_walk_speed > 100:
 				$AnimationPlayer.play("Correndo")
+				return
 			else:
 				$AnimationPlayer.play("Andando")
+				return
 		else:
 			$AnimationPlayer.play("Respirando")
+			return
 	else:
-		if motion.y < 0:
-			$AnimationPlayer.play("Pulo_subindo")
-		else:
-			$AnimationPlayer.play("Pulo_caindo")
 		if glidiando:
 			$AnimationPlayer.play("gliding")
+			return
+		if motion.y < 0:
+			$AnimationPlayer.play("Pulo_subindo")
+			return
+		else:
+			$AnimationPlayer.play("Pulo_caindo")
+			return
+
  
 func player_input():
 	if Input.is_action_pressed("ui_left"):
