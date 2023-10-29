@@ -1,4 +1,4 @@
-extends KinematicBody2D
+extends CharacterBody2D
  
 var max_walk_speed = 0
 var gravity = 7
@@ -11,11 +11,12 @@ var motion = Vector2(0,0)
 var state = ANDANDO
 var snapvector = Vector2(0,1)
 var glidiando = false
+var forca_horizontal = 0
 enum {ANDANDO,SWING_ROPE,DESLIZANDO,MACHUCADO}
 
  
 func _physics_process(delta):
-	print(max_walk_speed) #DEBUG
+	print(get_floor_normal())
 	match (state):
 		ANDANDO:
 			andando()
@@ -30,6 +31,9 @@ func _physics_process(delta):
  
 func animations():
 	if is_on_floor():
+		if state == DESLIZANDO:
+			$AnimationPlayer.play("Deslizando")
+			return
 		if motion.x != 0:
 			if max_walk_speed > 100:
 				$AnimationPlayer.play("Correndo")
@@ -53,24 +57,25 @@ func animations():
 
  
 func player_input():
-	if Input.is_action_pressed("ui_left"):
-		$Sprite.flip_h = true
+	if Input.is_action_pressed("left"):
+		$Sprite2D.flip_h = true
 		motion.x = max(motion.x-acceleration,-max_walk_speed)
-	elif Input.is_action_pressed("ui_right"):
-		$Sprite.flip_h = false
+	elif Input.is_action_pressed("right"):
+		$Sprite2D.flip_h = false
 		motion.x = min(motion.x+acceleration,max_walk_speed)
 	
-	if Input.is_action_pressed("ui_zb") and motion.y > 0:
+	if Input.is_action_pressed("jump") and motion.y > 0:
 		glidiando = true
 	else: 
 		glidiando = false
 
 	if is_on_floor():
 		motion.y=0
-		if Input.is_action_just_pressed("ui_zb"):
+		if Input.is_action_just_pressed("down") and get_floor_angle() != 0:
+			state = DESLIZANDO
+		if Input.is_action_just_pressed("jump"):
 			motion.y = jump_speed
-			snapvector = Vector2(0,0)
-		if Input.is_action_pressed("ui_xy"):
+		if Input.is_action_pressed("run"):
 			max_walk_speed = 150
 			acceleration = 30
 		else:
@@ -78,25 +83,32 @@ func player_input():
 			acceleration = 20
 	else:
 		if motion.y < 0:
-			if Input.is_action_just_released("ui_zb"): 
+			if Input.is_action_just_released("jump"): 
 				motion.y = motion.y/2
-		snapvector = Vector2(0,6)
 
 func inertia():
 	if is_on_floor():
 		if has_friction == true:
-			motion.x=lerp(motion.x,0,friction)
+			motion.x=lerpf(motion.x,0,friction)
 			if abs(motion.x) < 1: 
 				motion.x = 0
 	else:
 		if has_friction == true:
-			motion.x=lerp(motion.x,0,friction/1.5)
+			motion.x=lerpf(motion.x,0,friction/1.5)
 			if abs(motion.x) < 1: 
 				motion.x = 0
 
 
 func andando():
-	motion.y = move_and_slide_with_snap(motion,snapvector,Vector2(0, -1),false,4,deg2rad(65)).y
+	set_velocity(motion)
+	# TODOConverter40 looks that snap in Godot 4.0 is float, not vector like in Godot 3 - previous value `snapvector`
+	set_up_direction(Vector2(0, -1))
+	set_floor_stop_on_slope_enabled(false)
+	set_max_slides(4)
+	set_floor_max_angle(deg_to_rad(65))
+	move_and_slide()
+	floor_snap_length = 5
+	motion.y = velocity.y
 	if glidiando:
 		motion.y += gravity/4
 		motion.y = min(motion.y,100)
@@ -110,9 +122,31 @@ func swingando():
 	pass
 	
 func deslizando():
-	pass
+
+	set_velocity(motion)
+	move_and_slide()
+	if get_floor_angle() != 0:
+		if is_sliding_right(get_floor_normal()):
+			$Sprite2D.flip_h = false
+		else: 
+			$Sprite2D.flip_h = true
+		forca_horizontal = motion.y * sin(get_floor_angle()) * (1 if is_sliding_right(get_floor_normal()) else -1)
+		if is_on_floor():
+			motion.y += gravity
+			motion.y = min(motion.y,600)
+	if get_floor_angle() == 0:
+		motion.y = 0
+		motion.x = forca_horizontal
+		forca_horizontal = lerpf(forca_horizontal,0,0.05)
+	
+	
+	if Input.is_action_just_released("down"):
+		state =ANDANDO
+	
 
 func machucando():
 	pass
 
-
+func is_sliding_right(normal_vec):
+	return normal_vec.x >= 0 
+	

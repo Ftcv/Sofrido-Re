@@ -1,7 +1,7 @@
 extends Node2D
 
-export (NodePath) var player_path
-onready var player = get_node(player_path)
+@export var player_path : NodePath
+@onready var player = get_node(player_path)
 
 
 
