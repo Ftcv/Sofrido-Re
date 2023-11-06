@@ -1,10 +1,11 @@
 extends CharacterBody2D
- 
+
+var type_move
 var max_walk_speed = 0
 var gravity = 7
 var jump_speed = -200
 var acceleration = 0  # quanto menor maior a inercia
-var friction = 0.20 # quanto menor mais o player desliza
+var friction = 0.10 # quanto menor mais o player desliza
 var has_friction = true
 var is_alive = true
 var motion = Vector2(0,0)
@@ -16,7 +17,10 @@ enum {ANDANDO,SWING_ROPE,DESLIZANDO,MACHUCADO}
 
  
 func _physics_process(delta):
-	print(get_floor_normal())
+	# Verifica se houve uma colisão horizontal.Se houve, zera o movimento horizontal.
+	if is_on_wall():
+		motion.x = 0
+	print("movimento: ",type_move," friccao: ",friction, " max_walk_speed: ", max_walk_speed," aceleration: ",acceleration, " motion.x: ", motion.x)
 	match (state):
 		ANDANDO:
 			andando()
@@ -35,12 +39,13 @@ func animations():
 			$AnimationPlayer.play("Deslizando")
 			return
 		if motion.x != 0:
-			if max_walk_speed > 100:
+			if type_move == "correndo":
 				$AnimationPlayer.play("Correndo")
 				return
 			else:
-				$AnimationPlayer.play("Andando")
-				return
+				if type_move == "andando":
+					$AnimationPlayer.play("Andando")
+					return
 		else:
 			$AnimationPlayer.play("Respirando")
 			return
@@ -57,12 +62,26 @@ func animations():
 
  
 func player_input():
+	var direction = 0
 	if Input.is_action_pressed("left"):
 		$Sprite2D.flip_h = true
-		motion.x = max(motion.x-acceleration,-max_walk_speed)
+		direction = -1
+#		motion.x = max(motion.x-acceleration,-max_walk_speed)
 	elif Input.is_action_pressed("right"):
 		$Sprite2D.flip_h = false
-		motion.x = min(motion.x+acceleration,max_walk_speed)
+		direction = 1
+#		motion.x = min(motion.x+acceleration,max_walk_speed)
+
+# Calcula a aceleração baseada na direção e aplica ao motion.x
+	if direction != 0:
+		motion.x += (acceleration + max_walk_speed) * direction 
+	else:
+		inertia()
+#		# Aplica fricção para desacelerar até parar
+#		if motion.x > 0:
+#			motion.x = max(motion.x - friction, 0)
+#		elif motion.x < 0:
+#			motion.x = min(motion.x + friction, 0)
 	
 	if Input.is_action_pressed("jump") and motion.y > 0:
 		glidiando = true
@@ -76,11 +95,13 @@ func player_input():
 		if Input.is_action_just_pressed("jump"):
 			motion.y = jump_speed
 		if Input.is_action_pressed("run"):
-			max_walk_speed = 150
-			acceleration = 30
+			type_move = "correndo"
+			max_walk_speed = 45
+			acceleration = 2
 		else:
-			max_walk_speed = 100
-			acceleration = 20
+			type_move = "andando"
+			max_walk_speed = 30
+			acceleration = 2
 	else:
 		if motion.y < 0:
 			if Input.is_action_just_released("jump"): 
@@ -94,7 +115,7 @@ func inertia():
 				motion.x = 0
 	else:
 		if has_friction == true:
-			motion.x=lerpf(motion.x,0,friction/1.5)
+			motion.x=lerpf(motion.x,0,friction/1.01)
 			if abs(motion.x) < 1: 
 				motion.x = 0
 
