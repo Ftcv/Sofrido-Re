@@ -3,7 +3,7 @@ extends CharacterBody2D
 var type_move
 var max_walk_speed = 0
 var gravity = 7
-var jump_speed = -200
+var jump_speed = -300
 var acceleration = 0  # quanto menor maior a inercia
 var friction = 0.10 # quanto menor mais o player desliza
 var has_friction = true
@@ -20,7 +20,7 @@ func _physics_process(delta):
 	# Verifica se houve uma colisão horizontal.Se houve, zera o movimento horizontal.
 	if is_on_wall():
 		motion.x = 0
-	print("movimento: ",type_move," friccao: ",friction, " max_walk_speed: ", max_walk_speed," aceleration: ",acceleration, " motion.x: ", motion.x)
+	print("movimento: ",type_move," MOTION Y: ",motion.y, " max_walk_speed: ", max_walk_speed," aceleration: ",acceleration, " motion.x: ", motion.x)
 	match (state):
 		ANDANDO:
 			andando()
@@ -77,13 +77,8 @@ func player_input():
 		motion.x += (acceleration + max_walk_speed) * direction 
 	else:
 		inertia()
-#		# Aplica fricção para desacelerar até parar
-#		if motion.x > 0:
-#			motion.x = max(motion.x - friction, 0)
-#		elif motion.x < 0:
-#			motion.x = min(motion.x + friction, 0)
 	
-	if Input.is_action_pressed("jump") and motion.y > 0:
+	if Input.is_action_pressed("ui_rs") and motion.y > 0:
 		glidiando = true
 	else: 
 		glidiando = false
@@ -93,7 +88,11 @@ func player_input():
 		if Input.is_action_just_pressed("down") and get_floor_angle() != 0:
 			state = DESLIZANDO
 		if Input.is_action_just_pressed("jump"):
-			motion.y = jump_speed
+			if type_move == "correndo":
+				motion.y = jump_speed * 1.25
+			else:
+				motion.y = jump_speed
+				
 		if Input.is_action_pressed("run"):
 			type_move = "correndo"
 			max_walk_speed = 45
