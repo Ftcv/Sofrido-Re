@@ -149,3 +149,9 @@ frame = 1
 libraries = {
 "": SubResource("AnimationLibrary_xqe4o")
 }
+
+[node name="CoyoteTimer" type="Timer" parent="."]
+wait_time = 13.889
+one_shot = true
+
+[connection signal="timeout" from="CoyoteTimer" to="." method="_on_coyote_timer_timeout"]
