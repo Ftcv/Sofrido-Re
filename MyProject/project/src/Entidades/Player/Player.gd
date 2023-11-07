@@ -14,13 +14,15 @@ var snapvector = Vector2(0,1)
 var glidiando = false
 var forca_horizontal = 0
 enum {ANDANDO,SWING_ROPE,DESLIZANDO,MACHUCADO}
-
+@onready var coyote_jump_timer = $CoyoteTimer
  
 func _physics_process(delta):
 	# Verifica se houve uma colisão horizontal.Se houve, zera o movimento horizontal.
 	if is_on_wall():
 		motion.x = 0
-	print("movimento: ",type_move," MOTION Y: ",motion.y, " max_walk_speed: ", max_walk_speed," aceleration: ",acceleration, " motion.x: ", motion.x)
+	if is_on_ceiling():
+		motion.y =max(motion.y, 0)
+		
 	match (state):
 		ANDANDO:
 			andando()
@@ -32,7 +34,13 @@ func _physics_process(delta):
 			machucando()
  
 	animations()
- 
+	var was_on_floor = is_on_floor() #antes do move_and_slide ele vai verificar se está no chão
+	move_and_slide()
+	var just_left_ledge = was_on_floor and not is_on_floor() and motion.y >=0 #logo após o move_and_slide e fora do floor, se o was_on_floor ainda for true just_left_ledge vai ser true
+	if just_left_ledge: 
+		coyote_jump_timer.start()
+	#print("movimento: ",type_move," MOTION Y: ",motion.y, " max_walk_speed: ", max_walk_speed," aceleration: ",acceleration, " motion.x: ", motion.x," Time Left: ",coyote_jump_timer.time_left, " is on floor ",is_on_floor()," just_left_ledge: ",just_left_ledge)
+	print(" Time Left: ",coyote_jump_timer.time_left, " is on floor ",is_on_floor()," just_left_ledge: ",just_left_ledge, " BOTAO_PULAR: ",Input.is_action_pressed("jump"), " MOTION Y: ",motion.y)
 func animations():
 	if is_on_floor():
 		if state == DESLIZANDO:
@@ -75,8 +83,8 @@ func player_input():
 # Calcula a aceleração baseada na direção e aplica ao motion.x
 	if direction != 0:
 		motion.x += (acceleration + max_walk_speed) * direction 
-	else:
-		inertia()
+#	else:
+#		inertia()
 	
 	if Input.is_action_pressed("ui_rs") and motion.y > 0:
 		glidiando = true
@@ -88,11 +96,13 @@ func player_input():
 		if Input.is_action_just_pressed("down") and get_floor_angle() != 0:
 			state = DESLIZANDO
 		if Input.is_action_just_pressed("jump"):
+#				floor_snap_length = 0 
 			if type_move == "correndo":
 				motion.y = jump_speed * 1.25
 			else:
 				motion.y = jump_speed
-				
+			
+					
 		if Input.is_action_pressed("run"):
 			type_move = "correndo"
 			max_walk_speed = 45
@@ -102,10 +112,17 @@ func player_input():
 			max_walk_speed = 30
 			acceleration = 2
 	else:
+		if Input.is_action_just_pressed("jump") and coyote_jump_timer.time_left > 0.0:
+			if type_move == "correndo":
+				motion.y = jump_speed * 1.25
+			else:
+				motion.y = jump_speed
 		if motion.y < 0:
 			if Input.is_action_just_released("jump"): 
 				motion.y = motion.y/2
-
+				
+	
+	
 func inertia():
 	if is_on_floor():
 		if has_friction == true:
@@ -120,13 +137,13 @@ func inertia():
 
 
 func andando():
+	player_input()
 	set_velocity(motion)
 	# TODOConverter40 looks that snap in Godot 4.0 is float, not vector like in Godot 3 - previous value `snapvector`
 	set_up_direction(Vector2(0, -1))
 	set_floor_stop_on_slope_enabled(false)
 	set_max_slides(4)
 	set_floor_max_angle(deg_to_rad(65))
-	move_and_slide()
 	floor_snap_length = 5
 	motion.y = velocity.y
 	if glidiando:
@@ -136,7 +153,6 @@ func andando():
 		motion.y += gravity
 		motion.y = min(motion.y,400)
 	inertia()
-	player_input()
 
 func swingando():
 	pass
