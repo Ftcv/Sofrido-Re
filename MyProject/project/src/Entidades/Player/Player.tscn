@@ -132,6 +132,7 @@ _data = {
 }
 
 [node name="Player" type="CharacterBody2D"]
+slide_on_ceiling = false
 script = ExtResource("2")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -151,7 +152,7 @@ libraries = {
 }
 
 [node name="CoyoteTimer" type="Timer" parent="."]
-wait_time = 13.889
+wait_time = 0.1
 one_shot = true
 
 [connection signal="timeout" from="CoyoteTimer" to="." method="_on_coyote_timer_timeout"]

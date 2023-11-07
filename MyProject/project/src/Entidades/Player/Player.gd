@@ -20,6 +20,8 @@ func _physics_process(delta):
 	# Verifica se houve uma colisão horizontal.Se houve, zera o movimento horizontal.
 	if is_on_wall():
 		motion.x = 0
+	if is_on_ceiling():
+		motion.y =max(motion.y, 0)
 		
 	match (state):
 		ANDANDO:
@@ -81,8 +83,8 @@ func player_input():
 # Calcula a aceleração baseada na direção e aplica ao motion.x
 	if direction != 0:
 		motion.x += (acceleration + max_walk_speed) * direction 
-	else:
-		inertia()
+#	else:
+#		inertia()
 	
 	if Input.is_action_pressed("ui_rs") and motion.y > 0:
 		glidiando = true
@@ -93,13 +95,13 @@ func player_input():
 		motion.y=0
 		if Input.is_action_just_pressed("down") and get_floor_angle() != 0:
 			state = DESLIZANDO
-		if is_on_floor() or coyote_jump_timer.time_left > 0.0:
-			if Input.is_action_just_pressed("jump"):
-				floor_snap_length = 0 
-				if type_move == "correndo":
-					motion.y = jump_speed * 1.25
-				else:
-					motion.y = jump_speed
+		if Input.is_action_just_pressed("jump"):
+#				floor_snap_length = 0 
+			if type_move == "correndo":
+				motion.y = jump_speed * 1.25
+			else:
+				motion.y = jump_speed
+			
 					
 		if Input.is_action_pressed("run"):
 			type_move = "correndo"
@@ -110,6 +112,11 @@ func player_input():
 			max_walk_speed = 30
 			acceleration = 2
 	else:
+		if Input.is_action_just_pressed("jump") and coyote_jump_timer.time_left > 0.0:
+			if type_move == "correndo":
+				motion.y = jump_speed * 1.25
+			else:
+				motion.y = jump_speed
 		if motion.y < 0:
 			if Input.is_action_just_released("jump"): 
 				motion.y = motion.y/2
@@ -130,6 +137,7 @@ func inertia():
 
 
 func andando():
+	player_input()
 	set_velocity(motion)
 	# TODOConverter40 looks that snap in Godot 4.0 is float, not vector like in Godot 3 - previous value `snapvector`
 	set_up_direction(Vector2(0, -1))
@@ -145,7 +153,6 @@ func andando():
 		motion.y += gravity
 		motion.y = min(motion.y,400)
 	inertia()
-	player_input()
 
 func swingando():
 	pass
