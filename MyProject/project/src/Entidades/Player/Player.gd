@@ -1,13 +1,26 @@
 extends CharacterBody2D
 
-enum State { ANDANDO, SWING_ROPE, DESLIZANDO, MACHUCADO }
+enum State { 
+	IDLE,
+	ANDANDO,
+	PULANDO, 
+	CAINDO, 
+	GLIDANDO, 
+	SWING_ROPE, 
+	DESLIZANDO, 
+	MACHUCADO
+	 }
 
-# Member variables
+# VARIAVEIS
+var jump_height : float = 50
+var jump_time_to_peak : float = 0.5
+var jump_time_to_descent: float = 0.5
+
+var direction = 0
 var type_move: String
-var max_walk_speed = 0
-var gravity = 7
-var jump_speed = -225
-var acceleration = 0  # quanto menor maior a inercia
+var max_walk_speed = 200
+var acceleration = 10  
+var desaceleracao = 0.1
 var friction = 0.10  # quanto menor mais o player desliza
 var has_friction = true
 var is_alive = true
@@ -20,20 +33,29 @@ var angulo_floor = Vector2(0,0)
 var caindo_pra_direita = 2 # 1 é pra direita, 0 é pra esquerda
 var impulso_inicial = 0
 
-# Onready variables
+# VARIAVEIS ONREADY
 @onready var coyote_jump_timer = $CoyoteTimer
+@onready var jump_velocity : float = ((2.0 * jump_height) / jump_time_to_peak) * -1.0
+@onready var jump_gravity : float = ((-2.0 * jump_height) / (jump_time_to_peak * jump_time_to_peak)) * -1.0
+@onready var fall_gravity : float = ((-2.0 * jump_height) / (jump_time_to_descent * jump_time_to_descent)) * -1.0
 
+#CHAMADO ASSIM QUE INICIA O NODE:
 func _ready():
-	set_floor_snap_length(7)
-	
+	pass
+#	set_floor_snap_length(7)
 
 # Physics process handler
 func _physics_process(delta):
-	print(" motion.X: ", motion.x, " força horizontal : ",forca_horizontal," Direçao: ",caindo_pra_direita, " State: ",state)
+	print(" motion.y: ", motion.y, " velocity: ",velocity, " State: ", state," apply_gravity: " ,apply_gravity())
+	set_velocity(motion)
+	move_and_slide()
+	player_input()
 	handle_collision()
 	state_machine()
 	animations()
 	process_movement()
+	apply_gravity()
+	motion.y += apply_gravity() * delta
 
 # Collision handling
 func handle_collision():
@@ -45,8 +67,16 @@ func handle_collision():
 # State machine logic
 func state_machine():
 	match state:
+		State.IDLE:
+			idle()
 		State.ANDANDO:
 			andando()
+		State.PULANDO:
+			pass
+		State.CAINDO:
+			pass
+		State.GLIDANDO:
+			pass
 		State.SWING_ROPE:
 			swingando()
 		State.DESLIZANDO:
@@ -56,11 +86,22 @@ func state_machine():
 
 # Movement processing
 func process_movement():
+	acceleration_calc()
 	var was_on_floor = is_on_floor()
 	move_and_slide()
 	var just_left_ledge = was_on_floor and not is_on_floor() and motion.y >= 0
 	if just_left_ledge:
 		coyote_jump_timer.start()
+		
+
+# Calcula a aceleração baseada na direção e aplica ao motion.x
+func acceleration_calc():
+	if direction != 0:
+		motion.x += acceleration * direction
+		motion.x = clamp(motion.x,-max_walk_speed,max_walk_speed)
+	else:
+		inertia()
+		
 
 # Animations handler
 func animations():
@@ -77,6 +118,7 @@ func animations():
 					$AnimationPlayer.play("Andando")
 					return
 		else:
+			state = State.IDLE
 			$AnimationPlayer.play("Respirando")
 			return
 	else:
@@ -92,19 +134,17 @@ func animations():
 
 # Player input handler
 func player_input():
-	var direction = 0
 	if Input.is_action_pressed("left"):
 		$Sprite2D.flip_h = true
 		direction = -1
 	elif Input.is_action_pressed("right"):
 		$Sprite2D.flip_h = false
 		direction = 1
+	else: 
+		direction = 0
 
-# Calcula a aceleração baseada na direção e aplica ao motion.x
-	if direction != 0:
-		motion.x += (acceleration + max_walk_speed) * direction
 	
-	if Input.is_action_pressed("ui_rs") and motion.y >= 0:
+	if Input.is_action_pressed("ui_rs"): # and motion.y >= 0:
 		glidiando = true
 	else:
 		glidiando = false
@@ -113,30 +153,35 @@ func player_input():
 		motion.y=0
 		if Input.is_action_pressed("down") and get_floor_angle() != 0:
 			state = State.DESLIZANDO
+			
 		if Input.is_action_just_pressed("jump"):
-			if type_move == "correndo":
-				motion.y = jump_speed * 1.25
-			else:
-				motion.y = jump_speed
+			motion.y = jump_velocity
+			
+	if motion.y<0:
+		if Input.is_action_just_released("jump"):
+			motion.y = motion.y/2
+			apply_gravity()
+			
+		
+#		if Input.is_action_just_pressed("jump") and coyote_jump_timer.time_left > 0.0:
+#			if type_move == "correndo":
+#				velocity.y = jump_velocity * 1.25
+#			else:
+#				velocity.y = jump_velocity
+#		if motion.y < 0:
+#			if Input.is_action_just_released("jump"):
+##				motion.y = motion.y/2
+#				apply_gravity()
 			
 					
 		if Input.is_action_pressed("run"):
 			type_move = "correndo"
-			max_walk_speed = 30
-			acceleration = 2
+			max_walk_speed = 300
+			acceleration = 5
 		else:
 			type_move = "andando"
-			max_walk_speed = 20
-			acceleration = 2
-	else:
-		if Input.is_action_just_pressed("jump") and coyote_jump_timer.time_left > 0.0:
-			if type_move == "correndo":
-				motion.y = jump_speed * 1.25
-			else:
-				motion.y = jump_speed
-		if motion.y < 0:
-			if Input.is_action_just_released("jump"):
-				motion.y = motion.y/2
+			max_walk_speed = 200
+			acceleration = 5
 				
 	
 
@@ -155,12 +200,15 @@ func inertia():
 
 # Walking logic
 func andando():
+	process_movement()
 	apply_gravity()
 	player_input()
-	set_velocity(motion)
 	has_friction = true
 	inertia()
 
+#Idle logic
+func idle():
+	pass
 
 # Swinging logic
 func swingando():
@@ -187,7 +235,7 @@ func deslizando():
 	if is_sliding:
 		# Ajuste a velocidade horizontal de acordo com a inclinação
 		var slope_direction = sign(get_floor_normal().x)
-		set_velocity(Vector2(slide_speed * slope_direction * gravity, get_velocity().y))
+		set_velocity(Vector2(slide_speed * slope_direction * fall_gravity, get_velocity().y))
 
 		# Vire o sprite do personagem na direção apropriada
 		if slope_direction > 0:
@@ -217,14 +265,12 @@ func machucando():
 
 # Gravity application
 func apply_gravity():
-	if not is_on_floor():
-		if glidiando:
-			motion.y += gravity / 4
-			motion.y = min(motion.y, 100)
-		else:
-			motion.y += gravity
-			motion.y = min(motion.y, 400)
+#	if not is_on_floor() or
+	if glidiando == true:
+		return jump_gravity if velocity.y < 0.0 else fall_gravity/8
+	else:
+		return jump_gravity if velocity.y < 0.0 else fall_gravity
 
-
-
+func ataque():
+	pass
 
