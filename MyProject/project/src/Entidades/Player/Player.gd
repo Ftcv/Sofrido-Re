@@ -12,10 +12,11 @@ enum State {
 	 }
 
 # VARIAVEIS
+var slope_direction = sign(get_floor_normal().x)
 var is_sliding = false  # Variável para rastrear se o personagem está escorregando
 var slide_speed = 5.0  # Velocidade inicial de escorregar
 var max_slide_speed = 600  # Velocidade máxima de escorregar
-var slide_acceleration = 20  # Aceleração ao escorregar
+var slide_acceleration = 0.5  # Aceleração ao escorregar
 var slope_threshold = 0.2  # Ângulo máximo para considerar uma superfície como uma ladeira
 var jump_speed = -225 #forca do pulo
 var gravity = 8
@@ -43,8 +44,9 @@ func _ready():
 
 # Physics process handler
 func _physics_process(delta):
-	print(" motion.y: ", motion.y, " velocity: ",velocity, " State: ", state)
-#	motion.y += (jump_gravity if velocity.y < 0.0 else fall_gravity)
+	print(" motion: ", motion, " velocity: ",velocity, " State: ", state, " is_sliding: ", is_sliding, " floor_angle: ", get_floor_angle(), " slide_speed: ", slide_speed, " slope_direction: ", slope_direction, " gravity: ", gravity)
+	print(" input down: ",Input.is_action_pressed("down"))
+	
 	player_input()
 	set_velocity(motion)
 	state_machine()
@@ -57,7 +59,7 @@ func handle_collision():
 		motion.x = 0
 	if is_on_ceiling():
 		motion.y = max(motion.y, 0)
-	if is_on_floor():
+	if is_on_floor() and not state == State.DESLIZANDO:
 		motion.y=0
 
 
@@ -153,7 +155,7 @@ func player_input():
 		glidiando = false
 
 	if is_on_floor():
-		if Input.is_action_pressed("down") and get_floor_angle() != 0:
+		if Input.is_action_just_pressed("down") and get_floor_angle() != 0:
 			state = State.DESLIZANDO
 			
 		if Input.is_action_just_pressed("jump"):
@@ -192,6 +194,7 @@ func inertia():
 
 # Walking logic
 func andando():
+	slide_speed = 0.0
 	process_movement()
 	player_input()
 	has_friction = true
@@ -209,7 +212,7 @@ func swingando():
 # Sliding logic
 func deslizando():
 	# Verifique se o personagem está em uma ladeira
-	if is_on_floor() and get_floor_angle() > slope_threshold:
+	if is_on_floor() and  get_floor_angle() > slope_threshold:
 		is_sliding = true
 		slide_speed += slide_acceleration
 
@@ -220,8 +223,9 @@ func deslizando():
 	# Se o personagem está escorregando
 	if is_sliding:
 		# Ajuste a velocidade horizontal de acordo com a inclinação
-		var slope_direction = sign(get_floor_normal().x)
+		slope_direction = sign(get_floor_normal().x)
 		set_velocity(Vector2(slide_speed * slope_direction * gravity, get_velocity().y))
+		move_and_slide()
 
 		# Vire o sprite do personagem na direção apropriada
 		if slope_direction > 0:
@@ -235,13 +239,16 @@ func deslizando():
 		inertia()
 
 	if get_floor_angle() == 0:
+#		is_sliding = false
 		set_velocity(motion)
 
 	if not is_on_floor():
+#		is_sliding = false
 		state =State.ANDANDO
 	
 	#Se largar o botão para baixo
 	if Input.is_action_just_released("down"):
+#		is_sliding = false
 		state =State.ANDANDO
 
 # Hurting logic

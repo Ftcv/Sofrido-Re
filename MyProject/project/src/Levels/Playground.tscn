@@ -446,7 +446,7 @@ script = ExtResource("2")
 player_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource("1")]
-position = Vector2(1176, -249)
+position = Vector2(1191, -181)
 slide_on_ceiling = true
 metadata/_edit_group_ = true
 
