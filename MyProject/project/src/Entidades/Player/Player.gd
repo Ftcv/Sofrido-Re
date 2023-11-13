@@ -12,50 +12,46 @@ enum State {
 	 }
 
 # VARIAVEIS
-var jump_height : float = 50
-var jump_time_to_peak : float = 0.5
-var jump_time_to_descent: float = 0.5
-
+var slope_direction = sign(get_floor_normal().x)
+var is_sliding = false  # Variável para rastrear se o personagem está escorregando
+var slide_speed = 5.0  # Velocidade inicial de escorregar
+var max_slide_speed = 600  # Velocidade máxima de escorregar
+var slide_acceleration = 0.5  # Aceleração ao escorregar
+var slope_threshold = 0.2  # Ângulo máximo para considerar uma superfície como uma ladeira
+var jump_speed = -225 #forca do pulo
+var gravity = 8
 var direction = 0
 var type_move: String
 var max_walk_speed = 200
 var acceleration = 10  
-var desaceleracao = 0.1
-var friction = 0.10  # quanto menor mais o player desliza
+var friction = 0.1  # quanto menor mais o player desliza
 var has_friction = true
 var is_alive = true
 var motion = Vector2(0,0)
 var state = State.ANDANDO
 var snapvector = Vector2(0,1)
 var glidiando = false
-var forca_horizontal = 0
 var angulo_floor = Vector2(0,0)
 var caindo_pra_direita = 2 # 1 é pra direita, 0 é pra esquerda
 var impulso_inicial = 0
 
 # VARIAVEIS ONREADY
 @onready var coyote_jump_timer = $CoyoteTimer
-@onready var jump_velocity : float = ((2.0 * jump_height) / jump_time_to_peak) * -1.0
-@onready var jump_gravity : float = ((-2.0 * jump_height) / (jump_time_to_peak * jump_time_to_peak)) * -1.0
-@onready var fall_gravity : float = ((-2.0 * jump_height) / (jump_time_to_descent * jump_time_to_descent)) * -1.0
 
 #CHAMADO ASSIM QUE INICIA O NODE:
 func _ready():
-	pass
-#	set_floor_snap_length(7)
+	set_floor_snap_length(7)
 
 # Physics process handler
 func _physics_process(delta):
-	print(" motion.y: ", motion.y, " velocity: ",velocity, " State: ", state," apply_gravity: " ,apply_gravity())
-	set_velocity(motion)
-	move_and_slide()
+	print(" motion: ", motion, " velocity: ",velocity, " State: ", state, " is_sliding: ", is_sliding, " floor_angle: ", get_floor_angle(), " slide_speed: ", slide_speed, " slope_direction: ", slope_direction, " gravity: ", gravity)
+	print(" input down: ",Input.is_action_pressed("down"))
+	
 	player_input()
-	handle_collision()
+	set_velocity(motion)
 	state_machine()
 	animations()
-	process_movement()
-	apply_gravity()
-	motion.y += apply_gravity() * delta
+	handle_collision()
 
 # Collision handling
 func handle_collision():
@@ -63,6 +59,9 @@ func handle_collision():
 		motion.x = 0
 	if is_on_ceiling():
 		motion.y = max(motion.y, 0)
+	if is_on_floor() and not state == State.DESLIZANDO:
+		motion.y=0
+
 
 # State machine logic
 func state_machine():
@@ -91,7 +90,14 @@ func process_movement():
 	move_and_slide()
 	var just_left_ledge = was_on_floor and not is_on_floor() and motion.y >= 0
 	if just_left_ledge:
+		pass
 		coyote_jump_timer.start()
+
+func jump_logic():
+	if type_move == "correndo":
+		motion.y = jump_speed * 1.25
+	else:
+		motion.y = jump_speed
 		
 
 # Calcula a aceleração baseada na direção e aplica ao motion.x
@@ -118,7 +124,6 @@ func animations():
 					$AnimationPlayer.play("Andando")
 					return
 		else:
-			state = State.IDLE
 			$AnimationPlayer.play("Respirando")
 			return
 	else:
@@ -144,44 +149,33 @@ func player_input():
 		direction = 0
 
 	
-	if Input.is_action_pressed("ui_rs"): # and motion.y >= 0:
+	if Input.is_action_pressed("ui_rs") and motion.y >= 0:
 		glidiando = true
 	else:
 		glidiando = false
 
 	if is_on_floor():
-		motion.y=0
-		if Input.is_action_pressed("down") and get_floor_angle() != 0:
+		if Input.is_action_just_pressed("down") and get_floor_angle() != 0:
 			state = State.DESLIZANDO
 			
 		if Input.is_action_just_pressed("jump"):
-			motion.y = jump_velocity
+			jump_logic()
+	else:
+		if Input.is_action_just_pressed("jump") and coyote_jump_timer.time_left > 0.0:
+			jump_logic()
+			if motion.y<0:
+				if Input.is_action_just_released("jump"):
+					motion.y = motion.y/2
 			
-	if motion.y<0:
-		if Input.is_action_just_released("jump"):
-			motion.y = motion.y/2
-			apply_gravity()
 			
-		
-#		if Input.is_action_just_pressed("jump") and coyote_jump_timer.time_left > 0.0:
-#			if type_move == "correndo":
-#				velocity.y = jump_velocity * 1.25
-#			else:
-#				velocity.y = jump_velocity
-#		if motion.y < 0:
-#			if Input.is_action_just_released("jump"):
-##				motion.y = motion.y/2
-#				apply_gravity()
-			
-					
-		if Input.is_action_pressed("run"):
-			type_move = "correndo"
-			max_walk_speed = 300
-			acceleration = 5
-		else:
-			type_move = "andando"
-			max_walk_speed = 200
-			acceleration = 5
+	if Input.is_action_pressed("run"):
+		type_move = "correndo"
+		max_walk_speed = 300
+		acceleration = 50
+	else:
+		type_move = "andando"
+		max_walk_speed = 200
+		acceleration = 50
 				
 	
 
@@ -200,11 +194,12 @@ func inertia():
 
 # Walking logic
 func andando():
+	slide_speed = 0.0
 	process_movement()
-	apply_gravity()
 	player_input()
 	has_friction = true
 	inertia()
+	apply_gravity()
 
 #Idle logic
 func idle():
@@ -216,14 +211,8 @@ func swingando():
 
 # Sliding logic
 func deslizando():
-	var is_sliding = false  # Variável para rastrear se o personagem está escorregando
-	var slide_speed = 5.0  # Velocidade inicial de escorregar
-	var max_slide_speed = 600  # Velocidade máxima de escorregar
-	var slide_acceleration = 20  # Aceleração ao escorregar
-	var slope_threshold = 0.2  # Ângulo máximo para considerar uma superfície como uma ladeira
-
 	# Verifique se o personagem está em uma ladeira
-	if is_on_floor() and get_floor_angle() > slope_threshold:
+	if is_on_floor() and  get_floor_angle() > slope_threshold:
 		is_sliding = true
 		slide_speed += slide_acceleration
 
@@ -234,8 +223,9 @@ func deslizando():
 	# Se o personagem está escorregando
 	if is_sliding:
 		# Ajuste a velocidade horizontal de acordo com a inclinação
-		var slope_direction = sign(get_floor_normal().x)
-		set_velocity(Vector2(slide_speed * slope_direction * fall_gravity, get_velocity().y))
+		slope_direction = sign(get_floor_normal().x)
+		set_velocity(Vector2(slide_speed * slope_direction * gravity, get_velocity().y))
+		move_and_slide()
 
 		# Vire o sprite do personagem na direção apropriada
 		if slope_direction > 0:
@@ -246,17 +236,19 @@ func deslizando():
 		# Se não estiver escorregando, reinicialize a velocidade
 		slide_speed = 0.0
 		is_sliding = false 
-		apply_gravity()
 		inertia()
 
 	if get_floor_angle() == 0:
+#		is_sliding = false
 		set_velocity(motion)
 
 	if not is_on_floor():
+#		is_sliding = false
 		state =State.ANDANDO
 	
 	#Se largar o botão para baixo
 	if Input.is_action_just_released("down"):
+#		is_sliding = false
 		state =State.ANDANDO
 
 # Hurting logic
@@ -265,12 +257,15 @@ func machucando():
 
 # Gravity application
 func apply_gravity():
-#	if not is_on_floor() or
-	if glidiando == true:
-		return jump_gravity if velocity.y < 0.0 else fall_gravity/8
-	else:
-		return jump_gravity if velocity.y < 0.0 else fall_gravity
-
+	if not is_on_floor(): #or state == State.DESLIZANDO:
+		if glidiando:
+			motion.y += gravity / 4
+			motion.y = min(motion.y,100 )
+		else:
+			motion.y += gravity
+			motion.y = min(motion.y,300 )
+#
+		
 func ataque():
 	pass
 
