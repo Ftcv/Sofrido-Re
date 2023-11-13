@@ -1,4 +1,3 @@
 res://default_env.tres
 res://MyProject/project/src/Levels/Playground.tscn
 res://MyProject/project/src/Entidades/Player/Player.tscn
-res://MyProject/project/src/Entidades/Player/Player.gd

@@ -15,7 +15,7 @@ enum State {
 var slope_direction = sign(get_floor_normal().x)
 var is_sliding = false  # Variável para rastrear se o personagem está escorregando
 var slide_speed = 5.0  # Velocidade inicial de escorregar
-var max_slide_speed = 600  # Velocidade máxima de escorregar
+var max_slide_speed = 50  # Velocidade máxima de escorregar
 var slide_acceleration = 0.5  # Aceleração ao escorregar
 var slope_threshold = 0.2  # Ângulo máximo para considerar uma superfície como uma ladeira
 var jump_speed = -225 #forca do pulo
@@ -225,7 +225,8 @@ func deslizando():
 		# Ajuste a velocidade horizontal de acordo com a inclinação
 		slope_direction = sign(get_floor_normal().x)
 		set_velocity(Vector2(slide_speed * slope_direction * gravity, get_velocity().y))
-		move_and_slide()
+		process_movement() #
+#		move_and_slide()
 
 		# Vire o sprite do personagem na direção apropriada
 		if slope_direction > 0:
