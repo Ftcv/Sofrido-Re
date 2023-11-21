@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Sofrido Re"
 config/description="Jogo feito por Ftcv"
-run/main_scene="res://MyProject/project/src/Levels/Playground.tscn"
+run/main_scene="res://MyProject/Demo/Tela_demo.tscn"
 config/features=PackedStringArray("4.1")
 config/icon="res://playericon.png"
 

@@ -1,0 +1,60 @@
+[gd_scene load_steps=8 format=3 uid="uid://c5hcg5th1ef2h"]
+
+[ext_resource type="PackedScene" path="res://MyProject/project/src/Gameengine/SceneManager.tscn" id="1_ytj1c"]
+[ext_resource type="PackedScene" uid="uid://b8jcm5753ovyd" path="res://MyProject/project/src/Entidades/Player/Player.tscn" id="2_iog4u"]
+[ext_resource type="Texture2D" uid="uid://dwu67e1ntfu7p" path="res://MyProject/project/assets/Imagens/Tileset_atlas_template.png" id="3_cllpe"]
+[ext_resource type="AudioStream" uid="uid://dhu6q58yeb3cc" path="res://MyProject/Demo/Seashore War.mp3" id="4_klwpr"]
+[ext_resource type="PackedScene" uid="uid://baj8d0njxt4sk" path="res://MyProject/project/src/Entidades/Inimigos/Inimigo_Geral.tscn" id="5_g5c86"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ummkw"]
+texture = ExtResource("3_cllpe")
+0:0/0 = 0
+0:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
+0:0/0/physics_layer_0/angular_velocity = 0.0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+1:0/0 = 0
+1:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
+1:0/0/physics_layer_0/angular_velocity = 0.0
+1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 0.353554, -8, 8, 8, -8, 8)
+3:0/0 = 0
+3:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
+3:0/0/physics_layer_0/angular_velocity = 0.0
+3:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -0.441942, 8, 8, -8, 8)
+4:0/0 = 0
+4:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
+4:0/0/physics_layer_0/angular_velocity = 0.0
+4:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -0.265165, -0.176776, 3.8007, 8, 8, -8, 8)
+0:1/0 = 0
+0:1/0/physics_layer_0/linear_velocity = Vector2(0, 0)
+0:1/0/physics_layer_0/angular_velocity = 0.0
+2:0/0 = 0
+2:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
+2:0/0/physics_layer_0/angular_velocity = 0.0
+2:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, 8, -8, 8)
+
+[sub_resource type="TileSet" id="TileSet_2cl3p"]
+physics_layer_0/collision_layer = 1
+sources/0 = SubResource("TileSetAtlasSource_ummkw")
+
+[node name="demo_lvl1" type="Node2D"]
+
+[node name="SceneManager" parent="." instance=ExtResource("1_ytj1c")]
+
+[node name="Player" parent="." instance=ExtResource("2_iog4u")]
+position = Vector2(263, 128)
+metadata/_edit_group_ = true
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+
+[node name="TileMap" type="TileMap" parent="."]
+tile_set = SubResource("TileSet_2cl3p")
+format = 2
+layer_0/tile_data = PackedInt32Array(655375, 0, 0, 655376, 0, 0, 655377, 0, 0, 655378, 0, 0, 655379, 131072, 0, 720916, 131072, 0, 786453, 131072, 0, 851990, 131072, 0, 917527, 131072, 0, 983064, 131072, 0, 1048601, 131072, 0, 1114138, 131072, 0, 1179675, 131072, 0, 1245212, 131072, 0, 1310749, 131072, 0, 1376286, 131072, 0, 1441823, 131072, 0, 1507360, 131072, 0, 1572897, 131072, 0, 1638434, 131072, 0, 1703971, 131072, 0, 1769508, 131072, 0, 1835045, 131072, 0, 1900582, 131072, 0, 1966119, 131072, 0, 2031656, 131072, 0, 1835053, 0, 0, 1835054, 0, 0, 1835055, 0, 0, 2097192, 0, 0, 2097193, 0, 0, 2097194, 0, 0, 2097195, 0, 0, 2097196, 0, 0, 2097197, 0, 0, 2097198, 0, 0, 2097199, 0, 0, 2097200, 0, 0, 2097201, 0, 0, 2097202, 0, 0, 2097203, 0, 0, 2097204, 0, 0, 2097205, 0, 0, 2097206, 0, 0, 2097207, 0, 0, 2031672, 0, 0, 2031673, 0, 0, 2031674, 0, 0, 2031675, 0, 0, 2031676, 0, 0, 2031677, 0, 0, 2031678, 0, 0, 2031679, 0, 0, 2031680, 0, 0, 2031681, 0, 0, 2031682, 0, 0, 2031683, 0, 0, 2031684, 0, 0, 2031685, 0, 0, 2031686, 0, 0, 2031687, 0, 0, 2031688, 0, 0, 2031689, 0, 0, 2031690, 0, 0, 2031691, 0, 0, 2031692, 0, 0, 2031693, 0, 0, 2031694, 0, 0, 2031695, 0, 0, 2031696, 0, 0, 2031697, 0, 0, 2031698, 0, 0, 2031699, 0, 0, 2031700, 0, 0, 2031701, 0, 0, 2031702, 0, 0, 2031703, 0, 0, 2031704, 0, 0, 2031705, 0, 0, 2031706, 0, 0, 2031707, 0, 0, 2031708, 0, 0, 2031709, 0, 0, 2031710, 0, 0, 2031711, 0, 0, 2031712, 0, 0, 2031713, 0, 0, 2031714, 0, 0, 2031715, 0, 0, 2031716, 0, 0, 2031717, 0, 0, 2031718, 0, 0, 2031719, 0, 0, 2031720, 0, 0, 2031721, 0, 0, 2031722, 0, 0, 2031723, 0, 0, 2031724, 0, 0, 2031725, 0, 0, 2031726, 0, 0, 2031727, 0, 0, 2031728, 0, 0, 2031729, 0, 0, 2031730, 0, 0, 2031731, 0, 0, 2031732, 0, 0, 2031733, 0, 0, 2031734, 0, 0, 2031735, 0, 0, 2031736, 0, 0, 2031737, 0, 0, 2031738, 0, 0, 2031739, 0, 0, 2031740, 0, 0, 2031741, 0, 0, 2031742, 0, 0, 2031743, 0, 0, 2031744, 0, 0, 2031745, 0, 0, 2031746, 0, 0, 2031747, 0, 0, 2031748, 0, 0, 2031749, 0, 0, 2031750, 0, 0, 2031751, 0, 0, 2031752, 0, 0, 2031753, 0, 0, 2031754, 0, 0, 2031755, 0, 0, 2031756, 0, 0, 2031757, 0, 0, 2031758, 0, 0, 1966154, 0, 0, 1900618, 0, 0, 1900619, 0, 0, 1835083, 0, 0, 1769547, 0, 0, 1704011, 0, 0, 1704012, 0, 0, 1638476, 0, 0, 1572940, 0, 0, 1572939, 0, 0, 1507403, 0, 0, 1441867, 0, 0, 1376331, 0, 0, 1310795, 0, 0, 1245259, 0, 0, 1310794, 0, 0, 1376330, 0, 0, 1441866, 0, 0, 1507402, 0, 0, 1572938, 0, 0, 1638474, 0, 0, 1638475, 0, 0, 1835082, 0, 0, 1769546, 0, 0, 1704010, 0, 0, 1769548, 0, 0, 1835084, 0, 0, 1900620, 0, 0, 1966156, 0, 0, 1966155, 0, 0, 1507404, 0, 0, 1441868, 0, 0, 1376332, 0, 0, 1310796, 0, 0, 1245260, 0, 0, 1245258, 0, 0, 1507401, 0, 0, 1572937, 0, 0, 1638473, 0, 0, 1704009, 0, 0, 1769545, 0, 0, 1835081, 0, 0, 1900617, 0, 0, 1966153, 0, 0, 1638472, 0, 0, 1704008, 0, 0, 1769544, 0, 0, 1835080, 0, 0, 1900616, 0, 0, 1966152, 0, 0, 1769543, 0, 0, 1835079, 0, 0, 1900615, 0, 0, 1966151, 0, 0, 1835078, 0, 0, 1900614, 0, 0, 1966150, 0, 0, 1900613, 0, 0, 1966149, 0, 0, 1966148, 0, 0)
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("4_klwpr")
+volume_db = -24.0
+autoplay = true
+
+[node name="Inimigo_Geral" parent="." instance=ExtResource("5_g5c86")]
+position = Vector2(833, 458)

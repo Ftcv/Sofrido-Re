@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://d06bmnllyha5w"]
 
 [ext_resource type="PackedScene" uid="uid://b8jcm5753ovyd" path="res://MyProject/project/src/Entidades/Player/Player.tscn" id="1"]
-[ext_resource type="Script" path="res://MyProject/project/src/Gameengine/SceneManager.gd" id="2"]
+[ext_resource type="PackedScene" uid="uid://buy3u8wlrqnaq" path="res://MyProject/project/src/Levels/scene_manager.tscn" id="1_kkusy"]
 [ext_resource type="Texture2D" uid="uid://dwu67e1ntfu7p" path="res://MyProject/project/assets/Imagens/Tileset_atlas_template.png" id="3"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ljodt"]
@@ -441,9 +441,7 @@ sources/0 = SubResource("TileSetAtlasSource_ljodt")
 [node name="Playground" type="Node2D"]
 position = Vector2(219, 255)
 
-[node name="SceneManager" type="Node2D" parent="."]
-script = ExtResource("2")
-player_path = NodePath("../Player")
+[node name="SceneManager" parent="." instance=ExtResource("1_kkusy")]
 
 [node name="Player" parent="." instance=ExtResource("1")]
 position = Vector2(494, -69)
