@@ -152,4 +152,3 @@ func _on_PlayerDetector_body_exited(body):
 #        # Interaction logic
 
 # ... More methods for specific behaviors
-

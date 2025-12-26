@@ -269,9 +269,3 @@ func apply_gravity():
 		
 func ataque():
 	pass
-
-
-
-
-
-

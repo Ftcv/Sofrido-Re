@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://c5hcg5th1ef2h"]
 
-[ext_resource type="PackedScene" path="res://MyProject/project/src/Gameengine/SceneManager.tscn" id="1_ytj1c"]
+[ext_resource type="PackedScene" uid="uid://nu1ku3auc2k3" path="res://MyProject/project/src/Gameengine/SceneManager.tscn" id="1_ytj1c"]
 [ext_resource type="PackedScene" uid="uid://b8jcm5753ovyd" path="res://MyProject/project/src/Entidades/Player/Player.tscn" id="2_iog4u"]
 [ext_resource type="Texture2D" uid="uid://dwu67e1ntfu7p" path="res://MyProject/project/assets/Imagens/Tileset_atlas_template.png" id="3_cllpe"]
 [ext_resource type="AudioStream" uid="uid://dhu6q58yeb3cc" path="res://MyProject/Demo/Seashore War.mp3" id="4_klwpr"]
@@ -9,27 +9,15 @@
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ummkw"]
 texture = ExtResource("3_cllpe")
 0:0/0 = 0
-0:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
-0:0/0/physics_layer_0/angular_velocity = 0.0
 0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 1:0/0 = 0
-1:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
-1:0/0/physics_layer_0/angular_velocity = 0.0
 1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 0.353554, -8, 8, 8, -8, 8)
 3:0/0 = 0
-3:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
-3:0/0/physics_layer_0/angular_velocity = 0.0
 3:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -0.441942, 8, 8, -8, 8)
 4:0/0 = 0
-4:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
-4:0/0/physics_layer_0/angular_velocity = 0.0
 4:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -0.265165, -0.176776, 3.8007, 8, 8, -8, 8)
 0:1/0 = 0
-0:1/0/physics_layer_0/linear_velocity = Vector2(0, 0)
-0:1/0/physics_layer_0/angular_velocity = 0.0
 2:0/0 = 0
-2:0/0/physics_layer_0/linear_velocity = Vector2(0, 0)
-2:0/0/physics_layer_0/angular_velocity = 0.0
 2:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, 8, -8, 8)
 
 [sub_resource type="TileSet" id="TileSet_2cl3p"]
