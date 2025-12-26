@@ -1,7 +1,7 @@
 [gd_scene load_steps=13 format=3 uid="uid://b8jcm5753ovyd"]
 
 [ext_resource type="Animation" path="res://MyProject/project/assets/Animacoes/Respirando.tres" id="1"]
-[ext_resource type="Script" path="res://MyProject/project/src/Entidades/Player/Player.gd" id="2"]
+[ext_resource type="Script" uid="uid://cl5l35qmqfbkg" path="res://MyProject/project/src/Entidades/Player/Player.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://j2sduexk2le0" path="res://MyProject/project/assets/Imagens/Playersprite.png" id="3"]
 
 [sub_resource type="RectangleShape2D" id="1"]
@@ -121,14 +121,14 @@ tracks/0/keys = {
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_xqe4o"]
 _data = {
-"Andando": SubResource("2"),
-"Correndo": SubResource("6"),
-"Deslizando": SubResource("Animation_s5qq1"),
-"Pulo_caindo": SubResource("4"),
-"Pulo_subindo": SubResource("5"),
-"RESET": SubResource("3"),
-"Respirando": ExtResource("1"),
-"gliding": SubResource("7")
+&"Andando": SubResource("2"),
+&"Correndo": SubResource("6"),
+&"Deslizando": SubResource("Animation_s5qq1"),
+&"Pulo_caindo": SubResource("4"),
+&"Pulo_subindo": SubResource("5"),
+&"RESET": SubResource("3"),
+&"Respirando": ExtResource("1"),
+&"gliding": SubResource("7")
 }
 
 [node name="Player" type="CharacterBody2D"]
@@ -149,7 +149,7 @@ frame = 1
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
-"": SubResource("AnimationLibrary_xqe4o")
+&"": SubResource("AnimationLibrary_xqe4o")
 }
 
 [node name="CoyoteTimer" type="Timer" parent="."]

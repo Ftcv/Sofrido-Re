@@ -155,7 +155,7 @@ func player_input():
 		glidiando = false
 
 	if is_on_floor():
-		if Input.is_action_just_pressed("down") and get_floor_angle() != 0:
+		if Input.is_action_pressed("down") and get_floor_angle() != 0:
 			state = State.DESLIZANDO
 			
 		if Input.is_action_just_pressed("jump"):
@@ -269,4 +269,3 @@ func apply_gravity():
 		
 func ataque():
 	pass
-
