@@ -1,271 +1,331 @@
 extends CharacterBody2D
 
-enum State { 
+enum State {
 	IDLE,
 	ANDANDO,
-	PULANDO, 
-	CAINDO, 
-	GLIDANDO, 
-	SWING_ROPE, 
-	DESLIZANDO, 
+	PULANDO,
+	CAINDO,
+	GLIDANDO,
+	SWING_ROPE,
+	DESLIZANDO,
 	MACHUCADO
-	 }
+}
 
-# VARIAVEIS
-var slope_direction = sign(get_floor_normal().x)
-var is_sliding = false  # Variável para rastrear se o personagem está escorregando
-var slide_speed = 5.0  # Velocidade inicial de escorregar
-var max_slide_speed = 50  # Velocidade máxima de escorregar
-var slide_acceleration = 0.5  # Aceleração ao escorregar
-var slope_threshold = 0.2  # Ângulo máximo para considerar uma superfície como uma ladeira
-var jump_speed = -225 #forca do pulo
-var gravity = 8
-var direction = 0
-var type_move: String
-var max_walk_speed = 200
-var acceleration = 10  
-var friction = 0.1  # quanto menor mais o player desliza
-var has_friction = true
-var is_alive = true
-var motion = Vector2(0,0)
-var state = State.ANDANDO
-var snapvector = Vector2(0,1)
-var glidiando = false
-var angulo_floor = Vector2(0,0)
-var caindo_pra_direita = 2 # 1 é pra direita, 0 é pra esquerda
-var impulso_inicial = 0
+# ---------------------------
+# Tuning (mantive seus valores)
+# ---------------------------
+@export_group("Snap / Debug")
+@export var floor_snap: float = 7.0
+@export var debug_print: bool = false
 
-# VARIAVEIS ONREADY
-@onready var coyote_jump_timer = $CoyoteTimer
+@export_group("Movimento Horizontal (legacy feel)")
+@export var max_walk_speed: float = 200.0
+@export var max_run_speed: float = 300.0
+@export var acceleration: float = 50.0
+@export var friction: float = 0.1 # fator de lerp por tick (0..1)
+@export var has_friction: bool = true
 
-#CHAMADO ASSIM QUE INICIA O NODE:
-func _ready():
-	set_floor_snap_length(7)
+@export_group("Pulo / Gravidade (legacy feel)")
+@export var jump_speed: float = -225.0
+@export var gravity: float = 8.0
+@export var glide_gravity_divisor: float = 4.0
+@export var max_fall_speed: float = 300.0
+@export var max_glide_fall_speed: float = 100.0
 
-# Physics process handler
-func _physics_process(delta):
-	print(" motion: ", motion, " velocity: ",velocity, " State: ", state, " is_sliding: ", is_sliding, " floor_angle: ", get_floor_angle(), " slide_speed: ", slide_speed, " slope_direction: ", slope_direction, " gravity: ", gravity)
-	print(" input down: ",Input.is_action_pressed("down"))
-	
-	player_input()
-	set_velocity(motion)
-	state_machine()
-	animations()
-	handle_collision()
+@export_group("Sliding")
+@export var slide_speed_start: float = 5.0
+@export var max_slide_speed: float = 50.0
+@export var slide_acceleration: float = 0.5
+@export var slope_threshold: float = 0.2 # get_floor_angle() em radianos
 
-# Collision handling
-func handle_collision():
-	if is_on_wall():
-		motion.x = 0
-	if is_on_ceiling():
-		motion.y = max(motion.y, 0)
-	if is_on_floor() and not state == State.DESLIZANDO:
-		motion.y=0
+# ---------------------------
+# Estado / flags (mantidos)
+# ---------------------------
+var state: State = State.ANDANDO
+var is_alive: bool = true
 
+# Variáveis legacy que existiam (mantidas; não usadas ainda)
+var snapvector: Vector2 = Vector2(0, 1)
+var angulo_floor: Vector2 = Vector2.ZERO
+var caindo_pra_direita: int = 2
+var impulso_inicial: float = 0.0
 
-# State machine logic
-func state_machine():
+# Slide runtime
+var is_sliding: bool = false
+var slide_speed: float = 0.0
+var slope_direction: int = 0
+
+# Input/runtime
+var direction: int = 0
+var type_move: String = "andando"
+var glidiando: bool = false
+
+# Coyote
+@onready var coyote_jump_timer: Timer = $CoyoteTimer
+
+# Cache de nós (evita get_node repetido)
+@onready var sprite: Sprite2D = $Sprite2D
+@onready var anim: AnimationPlayer = $AnimationPlayer
+
+# Cache de input (1x por tick)
+var _jump_pressed := false
+var _jump_released := false
+var _down_pressed := false
+var _run_pressed := false
+var _glide_pressed := false
+var _axis := 0
+
+# Para coyote “correto”
+var _was_on_floor: bool = false
+
+func _ready() -> void:
+	# Em Godot 4, CharacterBody2D tem a propriedade floor_snap_length.
+	floor_snap_length = floor_snap
+	# Inicializa slide_speed como no seu “feel”
+	slide_speed = slide_speed_start
+
+	# Estado inicial
+	state = State.ANDANDO
+	type_move = "andando"
+	_was_on_floor = is_on_floor()
+
+func _physics_process(delta: float) -> void:
+	if not is_alive:
+		return
+
+	# Escala “por tick” (seu jogo está em 60Hz; isso preserva o feel mesmo se delta variar um pouco)
+	var dt_ticks := delta * 60.0
+
+	# 1) Input (uma vez)
+	_read_input()
+
+	# 2) Pré-estado: glide só quando caindo (como você pediu)
+	glidiando = _glide_pressed and velocity.y >= 0.0
+
+	# 3) Atualiza estado (transições simples; sem “megazord” aqui)
+	_update_state_pre_move()
+
+	# 4) Aplica movimento horizontal conforme estado
 	match state:
-		State.IDLE:
-			idle()
-		State.ANDANDO:
-			andando()
-		State.PULANDO:
-			pass
-		State.CAINDO:
-			pass
-		State.GLIDANDO:
-			pass
-		State.SWING_ROPE:
-			swingando()
 		State.DESLIZANDO:
-			deslizando()
-		State.MACHUCADO:
-			machucando()
+			_apply_slide(dt_ticks)
+		_:
+			_apply_walk(dt_ticks)
 
-# Movement processing
-func process_movement():
-	acceleration_calc()
-	var was_on_floor = is_on_floor()
+	# 5) Pulo (antes do move_and_slide, como no seu código original)
+	_apply_jump_logic()
+
+	# 6) Jump cut (pulo variável)
+	if _jump_released and velocity.y < 0.0:
+		velocity.y *= 0.5
+
+	# 7) Gravidade (apenas quando NÃO está no chão; igual ao original)
+	_apply_gravity(dt_ticks)
+
+	# 8) Move (uma vez por tick; CharacterBody2D usa velocity)
 	move_and_slide()
-	var just_left_ledge = was_on_floor and not is_on_floor() and motion.y >= 0
-	if just_left_ledge:
-		pass
-		coyote_jump_timer.start()
 
-func jump_logic():
-	if type_move == "correndo":
-		motion.y = jump_speed * 1.25
-	else:
-		motion.y = jump_speed
-		
+	# 9) Pós-movimento: colisões + coyote + “zerar Y no chão”
+	_post_move(delta)
 
-# Calcula a aceleração baseada na direção e aplica ao motion.x
-func acceleration_calc():
-	if direction != 0:
-		motion.x += acceleration * direction
-		motion.x = clamp(motion.x,-max_walk_speed,max_walk_speed)
-	else:
-		inertia()
-		
+	# 10) Animações
+	animations()
 
-# Animations handler
-func animations():
-	if is_on_floor():
-		if state == State.DESLIZANDO and get_floor_angle() != 0:
-			$AnimationPlayer.play("Deslizando")
-			return
-		if motion.x != 0:
-			if type_move == "correndo":
-				$AnimationPlayer.play("Correndo")
-				return
-			else:
-				if type_move == "andando":
-					$AnimationPlayer.play("Andando")
-					return
-		else:
-			$AnimationPlayer.play("Respirando")
-			return
-	else:
-		if glidiando:
-			$AnimationPlayer.play("gliding")
-			return
-		if motion.y < 0:
-			$AnimationPlayer.play("Pulo_subindo")
-			return
-		else:
-			$AnimationPlayer.play("Pulo_caindo")
-			return
+	if debug_print:
+		print("vel: ", velocity,
+			" state: ", state,
+			" on_floor: ", is_on_floor(),
+			" floor_angle: ", get_floor_angle(),
+			" sliding: ", is_sliding,
+			" slide_speed: ", slide_speed,
+			" slope_dir: ", slope_direction,
+			" glide: ", glidiando
+		)
 
-# Player input handler
-func player_input():
-	if Input.is_action_pressed("left"):
-		$Sprite2D.flip_h = true
-		direction = -1
-	elif Input.is_action_pressed("right"):
-		$Sprite2D.flip_h = false
-		direction = 1
-	else: 
-		direction = 0
+# ---------------------------
+# INPUT
+# ---------------------------
+func _read_input() -> void:
+	# Input API oficial
+	_axis = int(Input.get_axis("left", "right"))
+	_run_pressed = Input.is_action_pressed("run")
+	_down_pressed = Input.is_action_pressed("down")
+	_glide_pressed = Input.is_action_pressed("ui_rs")
+	_jump_pressed = Input.is_action_just_pressed("jump")
+	_jump_released = Input.is_action_just_released("jump")
 
-	
-	if Input.is_action_pressed("ui_rs") and motion.y >= 0:
-		glidiando = true
-	else:
-		glidiando = false
+	# Direção + flip
+	direction = _axis
+	if direction < 0:
+		sprite.flip_h = true
+	elif direction > 0:
+		sprite.flip_h = false
 
-	if is_on_floor():
-		if Input.is_action_pressed("down") and get_floor_angle() != 0:
-			state = State.DESLIZANDO
-			
-		if Input.is_action_just_pressed("jump"):
-			jump_logic()
-	else:
-		if Input.is_action_just_pressed("jump") and coyote_jump_timer.time_left > 0.0:
-			jump_logic()
-			if motion.y<0:
-				if Input.is_action_just_released("jump"):
-					motion.y = motion.y/2
-			
-			
-	if Input.is_action_pressed("run"):
+	# Run/Walk (mantém seu type_move)
+	if _run_pressed and is_on_floor():
 		type_move = "correndo"
-		max_walk_speed = 300
-		acceleration = 50
+		max_walk_speed = max_run_speed
 	else:
 		type_move = "andando"
-		max_walk_speed = 200
-		acceleration = 50
-				
-	
+		max_walk_speed = 200.0 # seu original
 
-# Inertia calculation
-func inertia():
-	if is_on_floor():
-		if has_friction == true:
-			motion.x=lerpf(motion.x,0,friction)
-			if abs(motion.x) < 1:
-				motion.x = 0
+# ---------------------------
+# STATE (pré-move)
+# ---------------------------
+func _update_state_pre_move() -> void:
+	# Slide exige segurar down o tempo todo
+	if state == State.DESLIZANDO and not _down_pressed:
+		state = State.ANDANDO
+
+	# Entrar em slide só no chão e em rampa
+	if is_on_floor() and _down_pressed and get_floor_angle() != 0.0:
+		state = State.DESLIZANDO
+		return
+
+	# Glide é “modo” de queda (não precisa forçar estado separado se você não usa)
+	# Mantendo sua enum, mas sem obrigar transição para não quebrar outras lógicas futuras.
+
+# ---------------------------
+# MOVIMENTO HORIZONTAL
+# ---------------------------
+func _apply_walk(dt_ticks: float) -> void:
+	# Aceleração “por tick” (preserva seu feel)
+	if direction != 0:
+		velocity.x += acceleration * float(direction) * dt_ticks
+		velocity.x = clampf(velocity.x, -max_walk_speed, max_walk_speed)
 	else:
-		if has_friction == true:
-			motion.x=lerpf(motion.x,0,friction/1.01)
-			if abs(motion.x) < 1:
-				motion.x = 0
+		_apply_inertia(dt_ticks)
 
-# Walking logic
-func andando():
-	slide_speed = 0.0
-	process_movement()
-	player_input()
-	has_friction = true
-	inertia()
-	apply_gravity()
+func _apply_inertia(dt_ticks: float) -> void:
+	if not has_friction:
+		return
 
-#Idle logic
-func idle():
-	pass
+	# Ajusta lerp por ticks: 1 - (1-t)^ticks
+	var t := _lerp_factor_per_ticks(friction, dt_ticks)
+	velocity.x = lerpf(velocity.x, 0.0, t)
 
-# Swinging logic
-func swingando():
-	pass
+	if absf(velocity.x) < 1.0:
+		velocity.x = 0.0
 
-# Sliding logic
-func deslizando():
-	# Verifique se o personagem está em uma ladeira
-	if is_on_floor() and  get_floor_angle() > slope_threshold:
+func _lerp_factor_per_ticks(base_t: float, ticks: float) -> float:
+	var t := clampf(base_t, 0.0, 1.0)
+	return 1.0 - pow(1.0 - t, maxf(0.0, ticks))
+
+# ---------------------------
+# SLIDE
+# ---------------------------
+func _apply_slide(dt_ticks: float) -> void:
+	# Só “escorrega” se ainda está em rampa acima do threshold
+	if is_on_floor() and get_floor_angle() > slope_threshold and _down_pressed:
 		is_sliding = true
-		slide_speed += slide_acceleration
-
-		# Limite a velocidade máxima
-		if slide_speed > max_slide_speed:
-			slide_speed = max_slide_speed
-
-	# Se o personagem está escorregando
-	if is_sliding:
-		# Ajuste a velocidade horizontal de acordo com a inclinação
-		slope_direction = sign(get_floor_normal().x)
-		set_velocity(Vector2(slide_speed * slope_direction * gravity, get_velocity().y))
-		process_movement() #
-#		move_and_slide()
-
-		# Vire o sprite do personagem na direção apropriada
-		if slope_direction > 0:
-			$Sprite2D.flip_h = false
-		else:
-			$Sprite2D.flip_h = true
+		slide_speed += slide_acceleration * dt_ticks
+		slide_speed = minf(slide_speed, max_slide_speed)
 	else:
-		# Se não estiver escorregando, reinicialize a velocidade
-		slide_speed = 0.0
-		is_sliding = false 
-		inertia()
+		is_sliding = false
 
-	if get_floor_angle() == 0:
-#		is_sliding = false
-		set_velocity(motion)
+	if is_sliding:
+		slope_direction = int(signf(get_floor_normal().x))
+		if slope_direction == 0:
+			slope_direction = 1
 
-	if not is_on_floor():
-#		is_sliding = false
-		state =State.ANDANDO
-	
-	#Se largar o botão para baixo
-	if Input.is_action_just_released("down"):
-#		is_sliding = false
-		state =State.ANDANDO
+		# Mantém sua “fórmula” (slide_speed * slope_direction * gravity)
+		velocity.x = slide_speed * float(slope_direction) * gravity
 
-# Hurting logic
-func machucando():
-	pass
+		# Flip do sprite conforme direção da rampa
+		sprite.flip_h = slope_direction < 0
+	else:
+		# Se não está deslizando, volta ao controle normal
+		slide_speed = slide_speed_start
+		state = State.ANDANDO
 
-# Gravity application
-func apply_gravity():
-	if not is_on_floor(): #or state == State.DESLIZANDO:
-		if glidiando:
-			motion.y += gravity / 4
-			motion.y = min(motion.y,100 )
-		else:
-			motion.y += gravity
-			motion.y = min(motion.y,300 )
-#
-		
-func ataque():
+# ---------------------------
+# PULO / COYOTE
+# ---------------------------
+func _apply_jump_logic() -> void:
+	if not _jump_pressed:
+		return
+
+	# No chão: pula
+	if is_on_floor():
+		_jump_now()
+		return
+
+	# No ar: coyote
+	if coyote_jump_timer.time_left > 0.0:
+		_jump_now()
+
+func _jump_now() -> void:
+	velocity.y = (jump_speed * 1.25) if type_move == "correndo" else jump_speed
+	state = State.PULANDO
+
+# ---------------------------
+# GRAVIDADE
+# ---------------------------
+func _apply_gravity(dt_ticks: float) -> void:
+	if is_on_floor():
+		return # igual ao seu original
+
+	if glidiando:
+		velocity.y += (gravity / glide_gravity_divisor) * dt_ticks
+		velocity.y = minf(velocity.y, max_glide_fall_speed)
+	else:
+		velocity.y += gravity * dt_ticks
+		velocity.y = minf(velocity.y, max_fall_speed)
+
+# ---------------------------
+# PÓS-MOVIMENTO (colisão/coyote)
+# ---------------------------
+func _post_move(_delta: float) -> void:
+	# Colisões do CharacterBody2D após mover
+	if is_on_wall():
+		velocity.x = 0.0
+	if is_on_ceiling():
+		velocity.y = maxf(velocity.y, 0.0)
+
+	# “Zerar Y no chão” somente depois de mover (não quebra o pulo)
+	if is_on_floor() and state != State.DESLIZANDO:
+		velocity.y = 0.0
+
+	# Coyote: detecta saída do chão (referência do tick anterior)
+	var now_on_floor := is_on_floor()
+	if _was_on_floor and not now_on_floor and velocity.y >= 0.0:
+		coyote_jump_timer.start()
+
+	if now_on_floor and not _was_on_floor:
+		# opcional: limpa para evitar sobras
+		coyote_jump_timer.stop()
+
+	_was_on_floor = now_on_floor
+
+# ---------------------------
+# ANIMAÇÕES (mantidas)
+# ---------------------------
+func animations() -> void:
+	if is_on_floor():
+		if state == State.DESLIZANDO and get_floor_angle() != 0.0:
+			anim.play("Deslizando")
+			return
+
+		if velocity.x != 0.0:
+			if type_move == "correndo":
+				anim.play("Correndo")
+				return
+			else:
+				anim.play("Andando")
+				return
+
+		anim.play("Respirando")
+		return
+
+	# No ar:
+	if glidiando:
+		anim.play("gliding")
+		return
+
+	if velocity.y < 0.0:
+		anim.play("Pulo_subindo")
+	else:
+		anim.play("Pulo_caindo")
+
+func ataque() -> void:
 	pass

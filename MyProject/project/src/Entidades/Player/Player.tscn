@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://j2sduexk2le0" path="res://MyProject/project/assets/Imagens/Playersprite.png" id="3"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(13, 26)
+size = Vector2(13, 23)
 
 [sub_resource type="Animation" id="2"]
 resource_name = "Andando"
@@ -137,7 +137,7 @@ floor_stop_on_slope = false
 script = ExtResource("2")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-0.5, 1)
+position = Vector2(-0.5, 2.5)
 shape = SubResource("1")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
