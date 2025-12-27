@@ -12,7 +12,7 @@ enum State {
 }
 
 # ---------------------------
-# Tuning (mantive seus valores)
+# Tuning
 # ---------------------------
 @export_group("Snap / Debug")
 @export var floor_snap: float = 7.0
@@ -39,7 +39,7 @@ enum State {
 @export var slope_threshold: float = 0.2 # get_floor_angle() em radianos
 
 # ---------------------------
-# Estado / flags (mantidos)
+# Estado / flags 
 # ---------------------------
 var state: State = State.ANDANDO
 var is_alive: bool = true
@@ -81,7 +81,7 @@ var _was_on_floor: bool = false
 func _ready() -> void:
 	# Em Godot 4, CharacterBody2D tem a propriedade floor_snap_length.
 	floor_snap_length = floor_snap
-	# Inicializa slide_speed como no seu “feel”
+	# Inicializa slide_speed 
 	slide_speed = slide_speed_start
 
 	# Estado inicial
@@ -93,16 +93,16 @@ func _physics_process(delta: float) -> void:
 	if not is_alive:
 		return
 
-	# Escala “por tick” (seu jogo está em 60Hz; isso preserva o feel mesmo se delta variar um pouco)
+	# Escala “por tick” (o jogo está em 60Hz; isso preserva o feel mesmo se delta variar um pouco)
 	var dt_ticks := delta * 60.0
 
 	# 1) Input (uma vez)
 	_read_input()
 
-	# 2) Pré-estado: glide só quando caindo (como você pediu)
+	# 2) Pré-estado: glide só quando caindo 
 	glidiando = _glide_pressed and velocity.y >= 0.0
 
-	# 3) Atualiza estado (transições simples; sem “megazord” aqui)
+	# 3) Atualiza estado 
 	_update_state_pre_move()
 
 	# 4) Aplica movimento horizontal conforme estado
@@ -112,14 +112,14 @@ func _physics_process(delta: float) -> void:
 		_:
 			_apply_walk(dt_ticks)
 
-	# 5) Pulo (antes do move_and_slide, como no seu código original)
+	# 5) Pulo (antes do move_and_slide)
 	_apply_jump_logic()
 
 	# 6) Jump cut (pulo variável)
 	if _jump_released and velocity.y < 0.0:
 		velocity.y *= 0.5
 
-	# 7) Gravidade (apenas quando NÃO está no chão; igual ao original)
+	# 7) Gravidade (apenas quando NÃO está no chão)
 	_apply_gravity(dt_ticks)
 
 	# 8) Move (uma vez por tick; CharacterBody2D usa velocity)
@@ -161,7 +161,7 @@ func _read_input() -> void:
 	elif direction > 0:
 		sprite.flip_h = false
 
-	# Run/Walk (mantém seu type_move)
+	# Run/Walk 
 	if _run_pressed and is_on_floor():
 		type_move = "correndo"
 		max_walk_speed = max_run_speed
@@ -182,14 +182,14 @@ func _update_state_pre_move() -> void:
 		state = State.DESLIZANDO
 		return
 
-	# Glide é “modo” de queda (não precisa forçar estado separado se você não usa)
-	# Mantendo sua enum, mas sem obrigar transição para não quebrar outras lógicas futuras.
+	# Glide é “modo” de queda (não precisa forçar estado separado se eu não uso)
+	# Mantendo enum, mas sem obrigar transição para não quebrar outras lógicas futuras.
 
 # ---------------------------
 # MOVIMENTO HORIZONTAL
 # ---------------------------
 func _apply_walk(dt_ticks: float) -> void:
-	# Aceleração “por tick” (preserva seu feel)
+	# Aceleração “por tick” 
 	if direction != 0:
 		velocity.x += acceleration * float(direction) * dt_ticks
 		velocity.x = clampf(velocity.x, -max_walk_speed, max_walk_speed)
@@ -228,7 +228,7 @@ func _apply_slide(dt_ticks: float) -> void:
 		if slope_direction == 0:
 			slope_direction = 1
 
-		# Mantém sua “fórmula” (slide_speed * slope_direction * gravity)
+		# Mantém a antiga “fórmula” (slide_speed * slope_direction * gravity)
 		velocity.x = slide_speed * float(slope_direction) * gravity
 
 		# Flip do sprite conforme direção da rampa
@@ -263,7 +263,7 @@ func _jump_now() -> void:
 # ---------------------------
 func _apply_gravity(dt_ticks: float) -> void:
 	if is_on_floor():
-		return # igual ao seu original
+		return 
 
 	if glidiando:
 		velocity.y += (gravity / glide_gravity_divisor) * dt_ticks
@@ -282,7 +282,7 @@ func _post_move(_delta: float) -> void:
 	if is_on_ceiling():
 		velocity.y = maxf(velocity.y, 0.0)
 
-	# “Zerar Y no chão” somente depois de mover (não quebra o pulo)
+	# “Zerar Y no chão” somente depois de mover 
 	if is_on_floor() and state != State.DESLIZANDO:
 		velocity.y = 0.0
 
@@ -298,7 +298,7 @@ func _post_move(_delta: float) -> void:
 	_was_on_floor = now_on_floor
 
 # ---------------------------
-# ANIMAÇÕES (mantidas)
+# ANIMAÇÕES 
 # ---------------------------
 func animations() -> void:
 	if is_on_floor():
