@@ -3,3 +3,8 @@ res://MyProject/project/src/Gameengine/SceneManager.tscn
 res://dev/Tela_demo.gd
 res://dev/demo_lvl1.tscn
 res://game/systems/scene_manager/SceneManager.gd
+res://game/player/player_stats.gd
+res://game/player/stats/player_stats_default.tres
+res://game/player/player_input.gd
+res://game/player/Player.gd
+res://game/player/Player.tscn

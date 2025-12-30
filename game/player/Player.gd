@@ -1,3 +1,4 @@
+# res://game/player/Player.gd
 extends CharacterBody2D
 
 enum State {
@@ -11,200 +12,250 @@ enum State {
 	MACHUCADO
 }
 
-# ---------------------------
-# Tuning
-# ---------------------------
-@export_group("Snap / Debug")
-@export var floor_snap: float = 7.0
+@export_group("Config")
 @export var debug_print: bool = false
+@export var stats: PlayerStats
 
-@export_group("Movimento Horizontal (legacy feel)")
-@export var max_walk_speed: float = 200.0
-@export var max_run_speed: float = 300.0
-@export var acceleration: float = 50.0
-@export var friction: float = 0.1 # fator de lerp por tick (0..1)
-@export var has_friction: bool = true
+# Nós (use get_node_or_null pra não explodir caso você renomeie algo)
+@onready var coyote_jump_timer: Timer = get_node_or_null("CoyoteTimer")
+@onready var sprite: Sprite2D = get_node_or_null("Sprite2D")
+@onready var anim: AnimationPlayer = get_node_or_null("AnimationPlayer")
+@onready var player_input: PlayerInput = get_node_or_null("PlayerInput")
 
-@export_group("Pulo / Gravidade (legacy feel)")
-@export var jump_speed: float = -225.0
-@export var gravity: float = 8.0
-@export var glide_gravity_divisor: float = 4.0
-@export var max_fall_speed: float = 300.0
-@export var max_glide_fall_speed: float = 100.0
-
-@export_group("Sliding")
-@export var slide_speed_start: float = 5.0
-@export var max_slide_speed: float = 50.0
-@export var slide_acceleration: float = 0.5
-@export var slope_threshold: float = 0.2 # get_floor_angle() em radianos
-
-# ---------------------------
-# Estado / flags 
-# ---------------------------
-var state: State = State.ANDANDO
+# Estado
+var state: State = State.IDLE
 var is_alive: bool = true
 
-# Variáveis legacy que existiam (mantidas; não usadas ainda)
-var snapvector: Vector2 = Vector2(0, 1)
-var angulo_floor: Vector2 = Vector2.ZERO
-var caindo_pra_direita: int = 2
-var impulso_inicial: float = 0.0
+# Run (modo de locomoção: “embalo” do chão pro ar)
+var _is_running: bool = false
 
 # Slide runtime
-var is_sliding: bool = false
-var slide_speed: float = 0.0
-var slope_direction: int = 0
+var _slide_speed: float = 0.0
+var _slope_direction: int = 0
 
-# Input/runtime
-var direction: int = 0
-var type_move: String = "andando"
-var glidiando: bool = false
-
-# Coyote
-@onready var coyote_jump_timer: Timer = $CoyoteTimer
-
-# Cache de nós (evita get_node repetido)
-@onready var sprite: Sprite2D = $Sprite2D
-@onready var anim: AnimationPlayer = $AnimationPlayer
-
-# Cache de input (1x por tick)
-var _jump_pressed := false
-var _jump_released := false
-var _down_pressed := false
-var _run_pressed := false
-var _glide_pressed := false
-var _axis := 0
-
-# Para coyote “correto”
+# Coyote bookkeeping
 var _was_on_floor: bool = false
 
 func _ready() -> void:
-	# Em Godot 4, CharacterBody2D tem a propriedade floor_snap_length.
-	floor_snap_length = floor_snap
-	# Inicializa slide_speed 
-	slide_speed = slide_speed_start
+	# Segurança: stats precisa existir (Resource de tuning)
+	if stats == null:
+		push_warning("Player.stats está vazio. Atribua um PlayerStats .tres no Inspector.")
+		stats = PlayerStats.new()
 
-	# Estado inicial
-	state = State.ANDANDO
-	type_move = "andando"
+	# Segurança: nós essenciais
+	if coyote_jump_timer == null:
+		push_error("Faltando Timer 'CoyoteTimer' como child do Player.")
+		return
+	if sprite == null:
+		push_error("Faltando Sprite2D 'Sprite2D' como child do Player.")
+		return
+	if anim == null:
+		push_error("Faltando AnimationPlayer 'AnimationPlayer' como child do Player.")
+		return
+	if player_input == null:
+		push_error("Faltando PlayerInput 'PlayerInput' como child do Player.")
+		return
+
+	# CharacterBody2D snap em rampas
+	floor_snap_length = stats.floor_snap_length
+
+	# Timer de coyote (rodar no physics é mais consistente)
+	coyote_jump_timer.one_shot = true
+	coyote_jump_timer.process_callback = Timer.TIMER_PROCESS_PHYSICS
+	coyote_jump_timer.wait_time = stats.coyote_seconds
+
+	# Input buffer (se for 0, funciona como “just pressed” normal)
+	player_input.configure_from_stats(stats)
+
+	_slide_speed = stats.slide_speed_start
 	_was_on_floor = is_on_floor()
+
+	# Estado inicial coerente
+	if is_on_floor():
+		set_state(State.IDLE)
+	else:
+		set_state(State.CAINDO)
 
 func _physics_process(delta: float) -> void:
 	if not is_alive:
 		return
 
-	# Escala “por tick” (o jogo está em 60Hz; isso preserva o feel mesmo se delta variar um pouco)
-	var dt_ticks := delta * 60.0
+	# dt_ticks amarrado ao tick real do engine
+	var dt_ticks := delta * float(Engine.physics_ticks_per_second)
 
-	# 1) Input (uma vez)
-	_read_input()
+	# 1) Atualiza snapshot de intenção (Player NÃO usa Input.*)
+	player_input.poll()
+	var input := player_input.snapshot
 
-	# 2) Pré-estado: glide só quando caindo 
-	glidiando = _glide_pressed and velocity.y >= 0.0
+	# 2) Facing
+	_update_facing(input.axis)
 
-	# 3) Atualiza estado 
-	_update_state_pre_move()
+	# 3) Run instantâneo (sem mutar exports)
+	_update_run_latch(input)
 
-	# 4) Aplica movimento horizontal conforme estado
+	# 4) State governa: decide transições
+	_update_state(input)
+
+	# 5) Simulação por estado
 	match state:
 		State.DESLIZANDO:
-			_apply_slide(dt_ticks)
+			_apply_slide(dt_ticks, input)
+		State.MACHUCADO:
+			# Sem controle (placeholder); só desacelera/gravidade etc.
+			_apply_inertia(dt_ticks)
 		_:
-			_apply_walk(dt_ticks)
+			_apply_walk(dt_ticks, input)
 
-	# 5) Pulo (antes do move_and_slide)
+	# 6) Pulo (coyote + buffer)
 	_apply_jump_logic()
 
-	# 6) Jump cut (pulo variável)
-	if _jump_released and velocity.y < 0.0:
-		velocity.y *= 0.5
+	# 7) Jump cut
+	if input.jump_released and velocity.y < 0.0:
+		velocity.y *= stats.jump_cut_multiplier
 
-	# 7) Gravidade (apenas quando NÃO está no chão)
+	# 8) Gravidade por estado
 	_apply_gravity(dt_ticks)
 
-	# 8) Move (uma vez por tick; CharacterBody2D usa velocity)
+	# 9) Move
 	move_and_slide()
 
-	# 9) Pós-movimento: colisões + coyote + “zerar Y no chão”
-	_post_move(delta)
+	# 10) Pós-move (coyote + correções)
+	_post_move()
 
-	# 10) Animações
-	animations()
+	# 11) Animações
+	_play_animations()
 
 	if debug_print:
-		print("vel: ", velocity,
-			" state: ", state,
-			" on_floor: ", is_on_floor(),
-			" floor_angle: ", get_floor_angle(),
-			" sliding: ", is_sliding,
-			" slide_speed: ", slide_speed,
-			" slope_dir: ", slope_direction,
-			" glide: ", glidiando
+		print("vel:", velocity,
+			" state:", state,
+			" on_floor:", is_on_floor(),
+			" floor_angle:", get_floor_angle(),
+			" running:", _is_running,
+			" slide_speed:", _slide_speed
 		)
 
 # ---------------------------
-# INPUT
+# Facing / Run
 # ---------------------------
-func _read_input() -> void:
-	# Input API oficial
-	_axis = int(Input.get_axis("left", "right"))
-	_run_pressed = Input.is_action_pressed("run")
-	_down_pressed = Input.is_action_pressed("down")
-	_glide_pressed = Input.is_action_pressed("ui_rs")
-	_jump_pressed = Input.is_action_just_pressed("jump")
-	_jump_released = Input.is_action_just_released("jump")
-
-	# Direção + flip
-	direction = _axis
-	if direction < 0:
+func _update_facing(axis: int) -> void:
+	if axis < 0:
 		sprite.flip_h = true
-	elif direction > 0:
+	elif axis > 0:
 		sprite.flip_h = false
 
-	# Run/Walk 
-	if _run_pressed and is_on_floor():
-		type_move = "correndo"
-		max_walk_speed = max_run_speed
+func _update_run_latch(input: PlayerInput.Snapshot) -> void:
+	if is_on_floor():
+		# Run liga instantâneo no chão
+		_is_running = input.run_held
 	else:
-		type_move = "andando"
-		max_walk_speed = 200.0 # seu original
+		# No ar: mantém se estava correndo e ainda segura run
+		if not input.run_held:
+			_is_running = false
+
+func _current_speed_cap(input: PlayerInput.Snapshot) -> float:
+	# - Run “de verdade” vem do embalo do chão
+	# - Se segurar run no ar sem embalo: bônus leve
+	var cap := stats.max_run_speed if _is_running else stats.max_walk_speed
+
+	if not is_on_floor() and input.run_held and not _is_running:
+		cap = maxf(cap, stats.max_walk_speed + stats.run_air_speed_bonus)
+
+	return cap
 
 # ---------------------------
-# STATE (pré-move)
+# State machine (centralizada)
 # ---------------------------
-func _update_state_pre_move() -> void:
-	# Slide exige segurar down o tempo todo
-	if state == State.DESLIZANDO and not _down_pressed:
-		state = State.ANDANDO
-
-	# Entrar em slide só no chão e em rampa
-	if is_on_floor() and _down_pressed and get_floor_angle() != 0.0:
-		state = State.DESLIZANDO
+func set_state(next: State) -> void:
+	if next == state:
+		return
+	if not _can_transition(state, next):
 		return
 
-	# Glide é “modo” de queda (não precisa forçar estado separado se eu não uso)
-	# Mantendo enum, mas sem obrigar transição para não quebrar outras lógicas futuras.
+	_exit_state(state)
+	state = next
+	_enter_state(state)
 
-# ---------------------------
-# MOVIMENTO HORIZONTAL
-# ---------------------------
-func _apply_walk(dt_ticks: float) -> void:
-	# Aceleração “por tick” 
-	if direction != 0:
-		velocity.x += acceleration * float(direction) * dt_ticks
-		velocity.x = clampf(velocity.x, -max_walk_speed, max_walk_speed)
+func _can_transition(_from: State, _to: State) -> bool:
+	# Regras mínimas agora; endurecemos quando tiver corda/dano/barril.
+	return true
+
+func _enter_state(s: State) -> void:
+	match s:
+		State.DESLIZANDO:
+			_slide_speed = stats.slide_speed_start
+
+func _exit_state(s: State) -> void:
+	match s:
+		State.DESLIZANDO:
+			_slide_speed = stats.slide_speed_start
+
+func _update_state(input: PlayerInput.Snapshot) -> void:
+	# 1) Slide: prioridade no chão
+	if state != State.MACHUCADO and _should_slide(input):
+		set_state(State.DESLIZANDO)
+		return
+
+	# 2) Se estava em slide e parou condição, sai (decisão aqui — centralizado)
+	if state == State.DESLIZANDO and not _should_slide(input):
+		if is_on_floor():
+			set_state(State.ANDANDO if absf(velocity.x) > 0.1 else State.IDLE)
+		else:
+			set_state(State.CAINDO)
+		return
+
+	# 3) Aéreo
+	if not is_on_floor():
+		if input.glide_held and velocity.y >= 0.0:
+			set_state(State.GLIDANDO)
+		else:
+			set_state(State.PULANDO if velocity.y < 0.0 else State.CAINDO)
+		return
+
+	# 4) Chão
+	if absf(velocity.x) > 0.1:
+		set_state(State.ANDANDO)
 	else:
-		_apply_inertia(dt_ticks)
+		set_state(State.IDLE)
 
+func _should_slide(input: PlayerInput.Snapshot) -> bool:
+	if not is_on_floor():
+		return false
+	if not input.down_held:
+		return false
+	return absf(get_floor_angle()) > stats.slope_threshold
+
+# ---------------------------
+# Movimento horizontal
+# ---------------------------
+func _apply_walk(dt_ticks: float, input: PlayerInput.Snapshot) -> void:
+	var cap := _current_speed_cap(input)
+
+	var accel := stats.acceleration
+	var friction := stats.friction
+
+	# Ar: um pouco menos “autoridade” que no chão
+	if not is_on_floor():
+		accel *= stats.air_accel_multiplier
+		friction *= stats.air_friction_multiplier
+
+	if input.axis != 0:
+		velocity.x += accel * float(input.axis) * dt_ticks
+		velocity.x = clampf(velocity.x, -cap, cap)
+	else:
+		_apply_friction(dt_ticks, friction)
+
+# ✅ Wrapper que faltava (conserta seu erro)
 func _apply_inertia(dt_ticks: float) -> void:
-	if not has_friction:
-		return
+	var friction := stats.friction
+	if not is_on_floor():
+		friction *= stats.air_friction_multiplier
+	_apply_friction(dt_ticks, friction)
 
-	# Ajusta lerp por ticks: 1 - (1-t)^ticks
-	var t := _lerp_factor_per_ticks(friction, dt_ticks)
+func _apply_friction(dt_ticks: float, friction_factor: float) -> void:
+	var t := _lerp_factor_per_ticks(friction_factor, dt_ticks)
 	velocity.x = lerpf(velocity.x, 0.0, t)
 
-	if absf(velocity.x) < 1.0:
+	if absf(velocity.x) < stats.stop_threshold:
 		velocity.x = 0.0
 
 func _lerp_factor_per_ticks(base_t: float, ticks: float) -> float:
@@ -212,120 +263,102 @@ func _lerp_factor_per_ticks(base_t: float, ticks: float) -> float:
 	return 1.0 - pow(1.0 - t, maxf(0.0, ticks))
 
 # ---------------------------
-# SLIDE
+# Slide
 # ---------------------------
-func _apply_slide(dt_ticks: float) -> void:
-	# Só “escorrega” se ainda está em rampa acima do threshold
-	if is_on_floor() and get_floor_angle() > slope_threshold and _down_pressed:
-		is_sliding = true
-		slide_speed += slide_acceleration * dt_ticks
-		slide_speed = minf(slide_speed, max_slide_speed)
-	else:
-		is_sliding = false
-
-	if is_sliding:
-		slope_direction = int(signf(get_floor_normal().x))
-		if slope_direction == 0:
-			slope_direction = 1
-
-		# Mantém a antiga “fórmula” (slide_speed * slope_direction * gravity)
-		velocity.x = slide_speed * float(slope_direction) * gravity
-
-		# Flip do sprite conforme direção da rampa
-		sprite.flip_h = slope_direction < 0
-	else:
-		# Se não está deslizando, volta ao controle normal
-		slide_speed = slide_speed_start
-		state = State.ANDANDO
-
-# ---------------------------
-# PULO / COYOTE
-# ---------------------------
-func _apply_jump_logic() -> void:
-	if not _jump_pressed:
+func _apply_slide(dt_ticks: float, input: PlayerInput.Snapshot) -> void:
+	# Se _should_slide falhar por algum motivo, não transiciona aqui (centralizado em _update_state)
+	if not _should_slide(input):
+		_slide_speed = stats.slide_speed_start
 		return
 
-	# No chão: pula
+	_slide_speed = minf(_slide_speed + stats.slide_acceleration * dt_ticks, stats.max_slide_speed)
+
+	_slope_direction = int(signf(get_floor_normal().x))
+	if _slope_direction == 0:
+		_slope_direction = 1
+
+	velocity.x = _slide_speed * float(_slope_direction) * stats.gravity
+	sprite.flip_h = _slope_direction < 0
+
+# ---------------------------
+# Pulo / Coyote / Buffer
+# ---------------------------
+func _apply_jump_logic() -> void:
+	if not player_input.peek_jump():
+		return
+
 	if is_on_floor():
+		player_input.consume_jump()
 		_jump_now()
 		return
 
-	# No ar: coyote
 	if coyote_jump_timer.time_left > 0.0:
+		player_input.consume_jump()
 		_jump_now()
 
 func _jump_now() -> void:
-	velocity.y = (jump_speed * 1.25) if type_move == "correndo" else jump_speed
-	state = State.PULANDO
+	var mult := stats.run_jump_multiplier if _is_running else 1.0
+	velocity.y = stats.jump_speed * mult
+	set_state(State.PULANDO)
 
 # ---------------------------
-# GRAVIDADE
+# Gravidade
 # ---------------------------
 func _apply_gravity(dt_ticks: float) -> void:
 	if is_on_floor():
-		return 
+		return
 
-	if glidiando:
-		velocity.y += (gravity / glide_gravity_divisor) * dt_ticks
-		velocity.y = minf(velocity.y, max_glide_fall_speed)
+	if state == State.GLIDANDO:
+		velocity.y += (stats.gravity / stats.glide_gravity_divisor) * dt_ticks
+		velocity.y = minf(velocity.y, stats.max_glide_fall_speed)
 	else:
-		velocity.y += gravity * dt_ticks
-		velocity.y = minf(velocity.y, max_fall_speed)
+		velocity.y += stats.gravity * dt_ticks
+		velocity.y = minf(velocity.y, stats.max_fall_speed)
 
 # ---------------------------
-# PÓS-MOVIMENTO (colisão/coyote)
+# Pós-move / colisões / coyote
 # ---------------------------
-func _post_move(_delta: float) -> void:
-	# Colisões do CharacterBody2D após mover
+func _post_move() -> void:
 	if is_on_wall():
 		velocity.x = 0.0
 	if is_on_ceiling():
 		velocity.y = maxf(velocity.y, 0.0)
 
-	# “Zerar Y no chão” somente depois de mover 
+	# Zera Y no chão (exceto slide)
 	if is_on_floor() and state != State.DESLIZANDO:
 		velocity.y = 0.0
 
-	# Coyote: detecta saída do chão (referência do tick anterior)
 	var now_on_floor := is_on_floor()
 	if _was_on_floor and not now_on_floor and velocity.y >= 0.0:
 		coyote_jump_timer.start()
 
 	if now_on_floor and not _was_on_floor:
-		# opcional: limpa para evitar sobras
 		coyote_jump_timer.stop()
 
 	_was_on_floor = now_on_floor
 
 # ---------------------------
-# ANIMAÇÕES 
+# Animações
 # ---------------------------
-func animations() -> void:
+func _play_animations() -> void:
 	if is_on_floor():
-		if state == State.DESLIZANDO and get_floor_angle() != 0.0:
+		if state == State.DESLIZANDO and absf(get_floor_angle()) > stats.slope_threshold:
 			anim.play("Deslizando")
 			return
 
-		if velocity.x != 0.0:
-			if type_move == "correndo":
-				anim.play("Correndo")
-				return
-			else:
-				anim.play("Andando")
-				return
+		if absf(velocity.x) > 0.1:
+			anim.play("Correndo" if _is_running else "Andando")
+			return
 
 		anim.play("Respirando")
 		return
 
 	# No ar:
-	if glidiando:
+	if state == State.GLIDANDO:
 		anim.play("gliding")
 		return
 
-	if velocity.y < 0.0:
-		anim.play("Pulo_subindo")
-	else:
-		anim.play("Pulo_caindo")
+	anim.play("Pulo_subindo" if velocity.y < 0.0 else "Pulo_caindo")
 
 func ataque() -> void:
 	pass

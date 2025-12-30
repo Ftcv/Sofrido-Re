@@ -1,11 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://b8jcm5753ovyd"]
+[gd_scene load_steps=15 format=3 uid="uid://b8jcm5753ovyd"]
 
 [ext_resource type="Animation" path="res://assets/animacoes/Respirando.tres" id="1"]
 [ext_resource type="Script" uid="uid://cl5l35qmqfbkg" path="res://game/player/Player.gd" id="2"]
+[ext_resource type="Resource" uid="uid://dxye4646gc0qf" path="res://game/player/stats/player_stats_default.tres" id="2_38lxl"]
 [ext_resource type="Texture2D" uid="uid://j2sduexk2le0" path="res://assets/imagens/Playersprite.png" id="3"]
-
-[sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(13, 23)
+[ext_resource type="Script" uid="uid://cappyoa32bd1h" path="res://game/player/player_input.gd" id="4_o4naa"]
 
 [sub_resource type="Animation" id="2"]
 resource_name = "Andando"
@@ -131,14 +130,14 @@ _data = {
 &"gliding": SubResource("7")
 }
 
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(13, 23)
+
 [node name="Player" type="CharacterBody2D"]
 slide_on_ceiling = false
 floor_stop_on_slope = false
 script = ExtResource("2")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-0.5, 2.5)
-shape = SubResource("1")
+stats = ExtResource("2_38lxl")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(0, -17)
@@ -152,8 +151,15 @@ libraries = {
 &"": SubResource("AnimationLibrary_xqe4o")
 }
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-0.5, 2.5)
+shape = SubResource("1")
+
 [node name="CoyoteTimer" type="Timer" parent="."]
 wait_time = 0.1
 one_shot = true
+
+[node name="PlayerInput" type="Node" parent="."]
+script = ExtResource("4_o4naa")
 
 [connection signal="timeout" from="CoyoteTimer" to="." method="_on_coyote_timer_timeout"]
