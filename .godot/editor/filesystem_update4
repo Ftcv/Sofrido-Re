@@ -1,0 +1,5 @@
+res://default_env.tres
+res://MyProject/project/src/Gameengine/SceneManager.tscn
+res://dev/Tela_demo.gd
+res://dev/demo_lvl1.tscn
+res://game/systems/scene_manager/SceneManager.gd
