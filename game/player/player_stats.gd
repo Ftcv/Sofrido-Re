@@ -27,6 +27,8 @@ class_name PlayerStats
 @export_group("Glide")
 @export var glide_gravity_divisor: float = 4.0
 @export var max_glide_fall_speed: float = 100.0
+@export var glide_open_brake: float = 40.0
+@export var glide_open_upward_cap: float = 0.0 # 0.0 = não permite “subir”, só freia a queda (recomendado)
 
 @export_group("Coyote / Buffer")
 @export var coyote_seconds: float = 0.12

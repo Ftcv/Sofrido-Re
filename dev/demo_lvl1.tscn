@@ -29,27 +29,14 @@ sources/0 = SubResource("TileSetAtlasSource_ummkw")
 [node name="SceneManager" parent="." instance=ExtResource("1_ytj1c")]
 
 [node name="Player" parent="." instance=ExtResource("2_iog4u")]
-position = Vector2(263, 128)
-floor_snap = null
+position = Vector2(255, 131)
 debug_print = null
-max_walk_speed = null
-max_run_speed = null
-acceleration = null
-friction = null
-has_friction = null
-jump_speed = null
-gravity = null
-glide_gravity_divisor = null
-max_fall_speed = null
-max_glide_fall_speed = null
-slide_speed_start = null
-max_slide_speed = null
-slide_acceleration = null
-slope_threshold = null
 metadata/_edit_group_ = true
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 zoom = Vector2(2, 2)
+position_smoothing_enabled = true
+drag_horizontal_enabled = true
 
 [node name="TileMap" type="TileMap" parent="."]
 tile_set = SubResource("TileSet_2cl3p")

@@ -183,6 +183,8 @@ func _enter_state(s: State) -> void:
 	match s:
 		State.DESLIZANDO:
 			_slide_speed = stats.slide_speed_start
+		State.GLIDANDO:
+			_apply_glide_open_pop()
 
 func _exit_state(s: State) -> void:
 	match s:
@@ -244,7 +246,7 @@ func _apply_walk(dt_ticks: float, input: PlayerInput.Snapshot) -> void:
 	else:
 		_apply_friction(dt_ticks, friction)
 
-# ✅ Wrapper que faltava (conserta seu erro)
+#  Wrapper
 func _apply_inertia(dt_ticks: float) -> void:
 	var friction := stats.friction
 	if not is_on_floor():
@@ -314,6 +316,21 @@ func _apply_gravity(dt_ticks: float) -> void:
 	else:
 		velocity.y += stats.gravity * dt_ticks
 		velocity.y = minf(velocity.y, stats.max_fall_speed)
+		
+# --------------
+# Glide pop
+# --------------
+func _apply_glide_open_pop() -> void:
+	# Só faz sentido no ar e quando já está caindo.
+	if is_on_floor():
+		return
+	if velocity.y <= 0.0:
+		return
+
+	# Freia a queda instantaneamente (efeito "abre paraquedas").
+	# Por padrão, NÃO deixa virar subida (cap = 0.0).
+	var upward_cap := -stats.glide_open_upward_cap # 0.0 -> 0.0, 10.0 -> -10.0 etc.
+	velocity.y = maxf(velocity.y - stats.glide_open_brake, upward_cap)
 
 # ---------------------------
 # Pós-move / colisões / coyote

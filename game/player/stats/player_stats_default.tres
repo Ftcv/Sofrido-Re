@@ -4,4 +4,10 @@
 
 [resource]
 script = ExtResource("1_egfi8")
+max_walk_speed = 150.0
+max_run_speed = 250.0
+acceleration = 40.0
+stop_threshold = 2.0
+gravity = 9.0
+glide_open_brake = 30.0
 metadata/_custom_type_script = "uid://b5y4v3at8f2kd"
