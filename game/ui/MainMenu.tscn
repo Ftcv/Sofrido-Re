@@ -1,0 +1,65 @@
+[gd_scene load_steps=6 format=3 uid="uid://d4ab52ou0g3w5"]
+
+[ext_resource type="Script" uid="uid://c5xn65fwv8c5h" path="res://game/ui/MainMenu.gd" id="1_6r146"]
+[ext_resource type="Texture2D" uid="uid://bgrbe8bt0twl7" path="res://assets/imagens/TitleScreen.jpg" id="2_jpgwa"]
+[ext_resource type="AudioStream" uid="uid://dhu6q58yeb3cc" path="res://dev/Seashore War.mp3" id="3_6r146"]
+[ext_resource type="AudioStream" uid="uid://cw1whaigjwy0y" path="res://assets/audio/sfx/ui_select.wav" id="4_nswjx"]
+[ext_resource type="AudioStream" uid="uid://s6br1ti1qm3k" path="res://assets/audio/sfx/ui_accept.wav" id="5_pr28i"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_6r146")
+
+[node name="MenuBackground" type="TextureRect" parent="."]
+texture_filter = 1
+layout_mode = 0
+offset_right = 640.0
+offset_bottom = 360.0
+texture = ExtResource("2_jpgwa")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 0
+offset_left = 276.0
+offset_top = 223.0
+offset_right = 372.0
+offset_bottom = 359.0
+
+[node name="MenuVBox" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+
+[node name="NewGameButton" type="Button" parent="CenterContainer/MenuVBox"]
+layout_mode = 2
+focus_neighbor_top = NodePath("../QuitButton")
+text = "New Game"
+
+[node name="LoadGameButton" type="Button" parent="CenterContainer/MenuVBox"]
+layout_mode = 2
+disabled = true
+text = "Load Game"
+
+[node name="OptionsButton" type="Button" parent="CenterContainer/MenuVBox"]
+layout_mode = 2
+text = "Options"
+
+[node name="QuitButton" type="Button" parent="CenterContainer/MenuVBox"]
+layout_mode = 2
+focus_neighbor_bottom = NodePath("../NewGameButton")
+text = "Quit
+"
+
+[node name="MenuMusic" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_6r146")
+volume_db = -30.051
+parameters/looping = true
+
+[node name="MenuSfxMove" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_nswjx")
+
+[node name="MenuSfxConfirm" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_pr28i")
+
+[connection signal="pressed" from="CenterContainer/MenuVBox/NewGameButton" to="." method="_on_new_game_button_pressed"]
+[connection signal="pressed" from="CenterContainer/MenuVBox/LoadGameButton" to="." method="_on_load_game_button_pressed"]
+[connection signal="pressed" from="CenterContainer/MenuVBox/OptionsButton" to="." method="_on_options_button_pressed"]
+[connection signal="pressed" from="CenterContainer/MenuVBox/QuitButton" to="." method="_on_quit_button_pressed"]

@@ -1,2 +1,3 @@
 res://default_env.tres
-res://game/player/Player.tscn
+res://game/ui/MainMenu.tscn
+res://game/ui/MainMenu.gd

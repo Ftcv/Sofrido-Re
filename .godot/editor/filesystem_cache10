@@ -1,23 +1,26 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1768422074
-default_env.tres::Environment::3563669176288526195::1767745121::0::1::::<><><>0<>0<><>::
+::res://::1768517613
+default_env.tres::Environment::3563669176288526195::1768517613::0::1::::<><><>0<>0<><>::
 icon.png::CompressedTexture2D/CompressedTexture2D::1748100145045867406::1766788188::1766788188::1::::<><><>0<>0<>a5b1a24ca51a0dfab6a0ce1c6cf355c6<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 playericon.png::CompressedTexture2D/CompressedTexture2D::3265391844454269755::1766788188::1766788188::1::::<><><>0<>0<>59b8db4fb56504d6ed6a4bcb63a8e423<>res://.godot/imported/playericon.png-4fcd3f09d136717904a5507b8fd74fbe.ctex::
 ::res://addons/::1767059259
 ::res://assets/::1767059300
 ::res://assets/animacoes/::1766788188
 Respirando.tres::Animation::-1::1766788188::0::1::::<><><>0<>0<><>::
-::res://assets/audio/::1767059300
-::res://assets/imagens/::1767059293
+::res://assets/audio/::1768518349
+::res://assets/audio/musics/::1768518349
+::res://assets/audio/sfx/::1768518357
+ui_accept.wav::AudioStreamWAV::1327487366706845138::1768518357::1768518357::1::::<><><>0<>0<>18fecb2afdf4989e51b04e7c0b3718bf<>res://.godot/imported/ui_accept.wav-cc1d412e6d84623b4fc9863737cbff74.sample::
+ui_select.wav::AudioStreamWAV::6372018036070633418::1768518357::1768518357::1::::<><><>0<>0<>6268ece91474fb349531ef0e7d477a44<>res://.godot/imported/ui_select.wav-d70ac7a88c51f2b31630dac3382b4179.sample::
+::res://assets/imagens/::1768514201
 Playersprite.png::CompressedTexture2D::688537113059089189::1766788188::1767059293::1::::<><><>0<>0<>48846072652381b5708b2cb989b75960<>res://.godot/imported/Playersprite.png-6ec43507fef915d63767f7168b645940.ctex::
 SOFRIDO.png::CompressedTexture2D::8905808492964789603::1766788188::1767059293::1::::<><><>0<>0<>d99afc0f8fb9411dff8b8e7c83d6f6c7<>res://.godot/imported/SOFRIDO.png-0f7f1f286c15394fae6ee58f80c8bdfd.ctex::
 Tileset_atlas_template.png::CompressedTexture2D::8746643789252515223::1766788188::1767059293::1::::<><><>0<>0<>4f5b47834dba8107480b6f94ea659377<>res://.godot/imported/Tileset_atlas_template.png-679b35e1030617f074bf5daadfae3a26.ctex::
 Tileset_autotile_template.png::CompressedTexture2D::8591515925042301048::1766788188::1767059293::1::::<><><>0<>0<>1c7f9e471402ae2014c15b6a618c668a<>res://.godot/imported/Tileset_autotile_template.png-a1d4b8b22413630d44aa36bbd77e1b09.ctex::
-::res://dev/::1767063907
+TitleScreen.jpg::CompressedTexture2D::2842717763221510838::1768514197::1768514201::1::::<><><>0<>0<>92bc9278f7af27ab558d358ceaebe88d<>res://.godot/imported/TitleScreen.jpg-d61aad517e90970cfeb0342617d2f084.ctex::
+::res://dev/::1768515286
 demo_lvl1.tscn::PackedScene::6893091074959299217::1767063907::0::1::::<><><>0<>0<><>::uid://nu1ku3auc2k3::::res://game/systems/scene_manager/SceneManager.tscn<>uid://b8jcm5753ovyd::::res://game/player/Player.tscn<>uid://dwu67e1ntfu7p::::res://assets/imagens/Tileset_atlas_template.png<>uid://dhu6q58yeb3cc::::res://dev/Seashore War.mp3<>uid://baj8d0njxt4sk::::res://game/enemies/Inimigo_Geral.tscn
 Seashore War.mp3::AudioStreamMP3::7693783938879881406::1766788188::1767059815::1::::<><><>0<>0<>816f0f2ddebf33de6d0bfcd679d64846<>res://.godot/imported/Seashore War.mp3-2618d9fa20dee4d876c154a9ace825f4.mp3str::
-Tela_demo.gd::GDScript::817896573773908611::1767060438::0::1::::<>Node2D<><>0<>0<><>::
-Tela_demo.tscn::PackedScene::3595426494973581333::1767059808::0::1::::<><><>0<>0<><>::uid://lwgvwps0p1tn::::res://dev/Tela_demo.gd<>uid://dy5bmnved24t8::::res://assets/imagens/SOFRIDO.png
 ::res://game/::1767059858
 ::res://game/enemies/::1767059505
 Inimigo_Geral.gd::GDScript::9064243391460689221::1766788188::0::1::::Inimigo<>CharacterBody2D<><>0<>0<><>::
@@ -25,9 +28,9 @@ Inimigo_Geral.tscn::PackedScene::2407010435229293514::1767059505::0::1::::<><><>
 ::res://game/levels/::1767745121
 Playground.tscn::PackedScene::8978061699254129386::1767745121::0::1::::<><><>0<>0<><>::uid://b8jcm5753ovyd::::res://game/player/Player.tscn<>uid://buy3u8wlrqnaq::::res://game/levels/scene_manager.tscn<>uid://dwu67e1ntfu7p::::res://assets/imagens/Tileset_atlas_template.png
 scene_manager.tscn::PackedScene::3841480182006145460::1767059920::0::1::::<><><>0<>0<><>::uid://grxi1qlp52j8::::res://game/systems/scene_manager/SceneManager.gd
-::res://game/player/::1767744483
+::res://game/player/::1768430477
 Player.gd::GDScript::5607569470160299270::1767744079::0::1::::<>CharacterBody2D<><>0<>0<><>::
-Player.tscn::PackedScene::4721376413582400503::1767744483::0::1::::<><><>0<>0<><>::res://assets/animacoes/Respirando.tres<>uid://cl5l35qmqfbkg::::res://game/player/Player.gd<>uid://dxye4646gc0qf::::res://game/player/stats/player_stats_default.tres<>uid://j2sduexk2le0::::res://assets/imagens/Playersprite.png<>uid://cappyoa32bd1h::::res://game/player/player_input.gd
+Player.tscn::PackedScene::4721376413582400503::1768430477::0::1::::<><><>0<>0<><>::res://assets/animacoes/Respirando.tres<>uid://cl5l35qmqfbkg::::res://game/player/Player.gd<>uid://dxye4646gc0qf::::res://game/player/stats/player_stats_default.tres<>uid://j2sduexk2le0::::res://assets/imagens/Playersprite.png<>uid://cappyoa32bd1h::::res://game/player/player_input.gd
 player_input.gd::GDScript::4804761384277531839::1767063407::0::1::::PlayerInput<>Node<><>0<>0<><>::
 player_stats.gd::GDScript::4543430824955141723::1767743846::0::1::::PlayerStats<>Resource<><>0<>0<><>::
 ::res://game/player/stats/::1767744483
@@ -37,4 +40,7 @@ Global.gd::GDScript::7196594863487645960::1766788188::0::1::::<>Node<><>0<>0<><>
 ::res://game/systems/scene_manager/::1767060629
 SceneManager.gd::GDScript::457639651677098111::1767060629::0::1::::<>Node2D<><>0<>0<><>::
 SceneManager.tscn::PackedScene::955340115874956972::1767059920::0::1::::<><><>0<>0<><>::uid://grxi1qlp52j8::::res://game/systems/scene_manager/SceneManager.gd
-::res://game/ui/::1767059858
+::res://game/ui/::1768517549
+MainMenu.tscn::PackedScene::9194854248092257210::1768517479::0::1::::<><><>0<>0<><>::uid://bgrbe8bt0twl7::::res://assets/imagens/TitleScreen.jpg<>uid://dhu6q58yeb3cc::::res://dev/Seashore War.mp3
+character_body_2d.gd::GDScript::3009322419572357021::1768516499::0::1::::<>CharacterBody2D<><>0<>0<><>::
+MainMenu.gd::GDScript::6926833629841033443::1768517549::0::1::::<>Control<><>0<>0<><>::
