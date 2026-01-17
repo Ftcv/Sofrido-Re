@@ -1,10 +1,16 @@
-[gd_scene load_steps=6 format=3 uid="uid://d4ab52ou0g3w5"]
+[gd_scene load_steps=9 format=3 uid="uid://d4ab52ou0g3w5"]
 
 [ext_resource type="Script" uid="uid://c5xn65fwv8c5h" path="res://game/ui/MainMenu.gd" id="1_6r146"]
 [ext_resource type="Texture2D" uid="uid://bgrbe8bt0twl7" path="res://assets/imagens/TitleScreen.jpg" id="2_jpgwa"]
 [ext_resource type="AudioStream" uid="uid://dhu6q58yeb3cc" path="res://dev/Seashore War.mp3" id="3_6r146"]
 [ext_resource type="AudioStream" uid="uid://cw1whaigjwy0y" path="res://assets/audio/sfx/ui_select.wav" id="4_nswjx"]
 [ext_resource type="AudioStream" uid="uid://s6br1ti1qm3k" path="res://assets/audio/sfx/ui_accept.wav" id="5_pr28i"]
+[ext_resource type="Shader" uid="uid://g2rm8rcjnuk7" path="res://game/ui/OptionMenu.gdshader" id="6_nswjx"]
+[ext_resource type="Script" uid="uid://xphrqyltbjn5" path="res://game/ui/options_menu.gd" id="6_pr28i"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pr28i"]
+shader = ExtResource("6_nswjx")
+shader_parameter/blur_strenght = 1.750000083125
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -51,13 +57,85 @@ text = "Quit
 [node name="MenuMusic" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("3_6r146")
 volume_db = -30.051
+bus = &"Music"
 parameters/looping = true
 
 [node name="MenuSfxMove" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("4_nswjx")
+bus = &"SFX"
 
 [node name="MenuSfxConfirm" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("5_pr28i")
+bus = &"SFX"
+
+[node name="OptionsMenu" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("6_pr28i")
+
+[node name="OptionsBackgroundBlur" type="TextureRect" parent="OptionsMenu"]
+material = SubResource("ShaderMaterial_pr28i")
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("2_jpgwa")
+
+[node name="OptionsCenter" type="CenterContainer" parent="OptionsMenu"]
+layout_mode = 0
+offset_left = 185.0
+offset_top = 176.0
+offset_right = 455.0
+offset_bottom = 358.0
+
+[node name="OptionsPanel" type="PanelContainer" parent="OptionsMenu/OptionsCenter"]
+layout_mode = 2
+
+[node name="OptionsVBox" type="VBoxContainer" parent="OptionsMenu/OptionsCenter/OptionsPanel"]
+layout_mode = 2
+
+[node name="TitleOptionsLabel" type="Label" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox"]
+layout_mode = 2
+
+[node name="MusicRow" type="HBoxContainer" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox"]
+layout_mode = 2
+
+[node name="LabelMusic" type="Label" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox/MusicRow"]
+layout_mode = 2
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox/MusicRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+step = 10.0
+
+[node name="SfxRow" type="HBoxContainer" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox"]
+layout_mode = 2
+
+[node name="LabelSFX" type="Label" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox/SfxRow"]
+layout_mode = 2
+text = "SFX"
+
+[node name="SfxSlider" type="HSlider" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox/SfxRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 50.0
+step = 5.0
+
+[node name="FullscreenCheck" type="CheckButton" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox"]
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="VsyncCheck" type="CheckButton" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox"]
+layout_mode = 2
+text = "Vsync"
+
+[node name="BackButton" type="Button" parent="OptionsMenu/OptionsCenter/OptionsPanel/OptionsVBox"]
+layout_mode = 2
+text = "Back
+"
 
 [connection signal="pressed" from="CenterContainer/MenuVBox/NewGameButton" to="." method="_on_new_game_button_pressed"]
 [connection signal="pressed" from="CenterContainer/MenuVBox/LoadGameButton" to="." method="_on_load_game_button_pressed"]

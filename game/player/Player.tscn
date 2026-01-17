@@ -130,8 +130,8 @@ _data = {
 &"gliding": SubResource("7")
 }
 
-[sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(13, 23)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_38lxl"]
+height = 25.0
 
 [node name="Player" type="CharacterBody2D"]
 slide_on_ceiling = false
@@ -154,7 +154,7 @@ libraries = {
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(-0.5, 2.5)
-shape = SubResource("1")
+shape = SubResource("CapsuleShape2D_38lxl")
 
 [node name="CoyoteTimer" type="Timer" parent="."]
 wait_time = 0.1

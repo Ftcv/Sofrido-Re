@@ -2,6 +2,9 @@
 extends Control
 @export var new_game_scene: String = "res://dev/demo_lvl1.tscn"
 
+@onready var menu_vbox: VBoxContainer = $CenterContainer/MenuVBox
+@onready var options_menu = $OptionsMenu
+
 @onready var btn_new: Button = $CenterContainer/MenuVBox/NewGameButton
 @onready var btn_load: Button = $CenterContainer/MenuVBox/LoadGameButton
 @onready var btn_options: Button = $CenterContainer/MenuVBox/OptionsButton
@@ -25,12 +28,18 @@ func _ready():
 # Foco inicial pra navegar no teclado/controle
 	btn_new.grab_focus.call_deferred()
 
+	# Garante estado inicial correto
+	menu_vbox.visible = true
+	options_menu.visible = false
 	
 # SFX ao mudar seleção: toca quando o botão recebe foco
 	btn_new.focus_entered.connect(_on_any_button_focused)
 	btn_load.focus_entered.connect(_on_any_button_focused)
 	btn_options.focus_entered.connect(_on_any_button_focused)
 	btn_quit.focus_entered.connect(_on_any_button_focused)
+	
+	# Quando o OptionsMenu fechar, restaura o menu principal
+	options_menu.closed.connect(_on_options_closed)
 
 func _set_buttons_enabled(enabled: bool) -> void:
 	btn_new.disabled = not enabled
@@ -73,6 +82,16 @@ func _on_options_button_pressed() -> void:
 	_busy = false
 	_set_buttons_enabled(true)
 
+	# Some o menu de botões e abre o OptionsMenu por cima
+	menu_vbox.visible = false
+	options_menu.open()
+	# Não libera _busy aqui: só libera quando o Options fechar
+
+func _on_options_closed() -> void:
+	menu_vbox.visible = true
+	_busy = false
+	_set_buttons_enabled(true)
+	btn_options.grab_focus.call_deferred()
 
 func _on_quit_button_pressed() -> void:
 	if _busy:

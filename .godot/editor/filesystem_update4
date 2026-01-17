@@ -1,3 +1,7 @@
 res://default_env.tres
 res://game/ui/MainMenu.tscn
+res://game/ui/OptionMenu.gdshader
+res://game/ui/options_menu.gd
 res://game/ui/MainMenu.gd
+res://game/player/Player.tscn
+res://dev/demo_lvl1.tscn

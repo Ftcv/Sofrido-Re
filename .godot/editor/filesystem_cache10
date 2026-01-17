@@ -1,6 +1,7 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1768517613
-default_env.tres::Environment::3563669176288526195::1768517613::0::1::::<><><>0<>0<><>::
+::res://::1768670384
+default_bus_layout.tres::AudioBusLayout::321246895729976081::1768653982::0::1::::<><><>0<>0<><>::
+default_env.tres::Environment::3563669176288526195::1768655010::0::1::::<><><>0<>0<><>::
 icon.png::CompressedTexture2D/CompressedTexture2D::1748100145045867406::1766788188::1766788188::1::::<><><>0<>0<>a5b1a24ca51a0dfab6a0ce1c6cf355c6<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 playericon.png::CompressedTexture2D/CompressedTexture2D::3265391844454269755::1766788188::1766788188::1::::<><><>0<>0<>59b8db4fb56504d6ed6a4bcb63a8e423<>res://.godot/imported/playericon.png-4fcd3f09d136717904a5507b8fd74fbe.ctex::
 ::res://addons/::1767059259
@@ -9,8 +10,8 @@ playericon.png::CompressedTexture2D/CompressedTexture2D::3265391844454269755::17
 Respirando.tres::Animation::-1::1766788188::0::1::::<><><>0<>0<><>::
 ::res://assets/audio/::1768518349
 ::res://assets/audio/musics/::1768518349
-::res://assets/audio/sfx/::1768518357
-ui_accept.wav::AudioStreamWAV::1327487366706845138::1768518357::1768518357::1::::<><><>0<>0<>18fecb2afdf4989e51b04e7c0b3718bf<>res://.godot/imported/ui_accept.wav-cc1d412e6d84623b4fc9863737cbff74.sample::
+::res://assets/audio/sfx/::1768518383
+ui_accept.wav::AudioStreamWAV::1327487366706845138::1768518383::1768518357::1::::<><><>0<>0<>18fecb2afdf4989e51b04e7c0b3718bf<>res://.godot/imported/ui_accept.wav-cc1d412e6d84623b4fc9863737cbff74.sample::
 ui_select.wav::AudioStreamWAV::6372018036070633418::1768518357::1768518357::1::::<><><>0<>0<>6268ece91474fb349531ef0e7d477a44<>res://.godot/imported/ui_select.wav-d70ac7a88c51f2b31630dac3382b4179.sample::
 ::res://assets/imagens/::1768514201
 Playersprite.png::CompressedTexture2D::688537113059089189::1766788188::1767059293::1::::<><><>0<>0<>48846072652381b5708b2cb989b75960<>res://.godot/imported/Playersprite.png-6ec43507fef915d63767f7168b645940.ctex::
@@ -40,7 +41,8 @@ Global.gd::GDScript::7196594863487645960::1766788188::0::1::::<>Node<><>0<>0<><>
 ::res://game/systems/scene_manager/::1767060629
 SceneManager.gd::GDScript::457639651677098111::1767060629::0::1::::<>Node2D<><>0<>0<><>::
 SceneManager.tscn::PackedScene::955340115874956972::1767059920::0::1::::<><><>0<>0<><>::uid://grxi1qlp52j8::::res://game/systems/scene_manager/SceneManager.gd
-::res://game/ui/::1768517549
-MainMenu.tscn::PackedScene::9194854248092257210::1768517479::0::1::::<><><>0<>0<><>::uid://bgrbe8bt0twl7::::res://assets/imagens/TitleScreen.jpg<>uid://dhu6q58yeb3cc::::res://dev/Seashore War.mp3
+::res://game/ui/::1768655010
 character_body_2d.gd::GDScript::3009322419572357021::1768516499::0::1::::<>CharacterBody2D<><>0<>0<><>::
-MainMenu.gd::GDScript::6926833629841033443::1768517549::0::1::::<>Control<><>0<>0<><>::
+MainMenu.gd::GDScript::6926833629841033443::1768520176::0::1::::<>Control<><>0<>0<><>::
+MainMenu.tscn::PackedScene::9194854248092257210::1768655010::0::1::::<><><>0<>0<><>::uid://c5xn65fwv8c5h::::res://game/ui/MainMenu.gd<>uid://bgrbe8bt0twl7::::res://assets/imagens/TitleScreen.jpg<>uid://dhu6q58yeb3cc::::res://dev/Seashore War.mp3<>uid://cw1whaigjwy0y::::res://assets/audio/sfx/ui_select.wav<>uid://s6br1ti1qm3k::::res://assets/audio/sfx/ui_accept.wav<>uid://g2rm8rcjnuk7::::res://game/ui/OptionMenu.gdshader
+OptionMenu.gdshader::Shader::477926639227359036::1768654975::0::1::::<><><>0<>0<><>::
