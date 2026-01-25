@@ -9,7 +9,7 @@ class_name PlayerStats
 @export var max_walk_speed: float = 200.0
 @export var max_run_speed: float = 300.0
 @export var acceleration: float = 50.0
-@export var friction: float = 0.18 # maior = para mais rápido (menos escorregadio)
+@export var friction: float = 0.18
 @export var stop_threshold: float = 1.0
 
 @export_group("Movimento - ar (controle)")
@@ -28,14 +28,34 @@ class_name PlayerStats
 @export var glide_gravity_divisor: float = 4.0
 @export var max_glide_fall_speed: float = 100.0
 @export var glide_open_brake: float = 40.0
-@export var glide_open_upward_cap: float = 0.0 # 0.0 = não permite “subir”, só freia a queda (recomendado)
+@export var glide_open_upward_cap: float = 0.0
 
 @export_group("Coyote / Buffer")
 @export var coyote_seconds: float = 0.12
-@export var jump_buffer_seconds: float = 0.0 # 0 = desliga (comportamento “padrão”)
+@export var jump_buffer_seconds: float = 0.0
 
-@export_group("Slide")
+@export_group("Slide (ladeira)")
 @export var slide_speed_start: float = 5.0
 @export var max_slide_speed: float = 50.0
 @export var slide_acceleration: float = 0.5
 @export var slope_threshold: float = 0.2 # rad
+
+@export_group("Crouch / Ground Pound")
+@export var crouch_speed_cap: float = 120.0
+@export var ground_pound_start_speed: float = 250.0
+@export var ground_pound_max_speed: float = 520.0
+@export var ground_pound_gravity_multiplier: float = 2.0
+
+@export_group("Wall")
+@export var max_wall_slide_speed: float = 120.0
+@export var wall_slide_gravity_divisor: float = 2.5
+@export var wall_jump_y: float = -240.0
+@export var wall_jump_x: float = 220.0
+@export var wall_jump_lock_seconds: float = 0.10
+
+@export_group("HP / Dano")
+@export var max_hp: int = 3
+@export var invuln_seconds: float = 0.60
+@export var hurt_lock_seconds: float = 0.25
+@export var knockback_x: float = 220.0
+@export var knockback_y: float = -170.0

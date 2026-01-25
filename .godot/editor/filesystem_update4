@@ -1,7 +1,8 @@
 res://default_env.tres
-res://game/ui/MainMenu.tscn
-res://game/ui/OptionMenu.gdshader
-res://game/ui/options_menu.gd
-res://game/ui/MainMenu.gd
 res://game/player/Player.tscn
-res://dev/demo_lvl1.tscn
+res://game/ui/OptionMenu.gdshader
+res://game/player/Player.gd
+res://game/player/player_input.gd
+res://game/player/player_stats.gd
+res://game/enemies/Inimigo_Geral.gd
+res://game/enemies/Inimigo_Geral.tscn

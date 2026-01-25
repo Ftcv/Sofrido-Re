@@ -8,14 +8,21 @@ class_name PlayerInput
 @export var action_down: StringName = &"down"
 @export var action_glide: StringName = &"ui_rs"
 @export var action_jump: StringName = &"jump"
+@export var action_attack: StringName = &"attack" # <-- novo
 
 class Snapshot:
 	var axis: int = 0
 	var run_held: bool = false
+
 	var down_held: bool = false
+	var down_pressed: bool = false # <-- novo (apertou agora)
+
 	var glide_held: bool = false
+
 	var jump_released: bool = false
 	var jump_buffered: bool = false
+
+	var attack_pressed: bool = false # <-- novo (apertou agora)
 
 var snapshot := Snapshot.new()
 
@@ -29,23 +36,22 @@ func set_jump_buffer_seconds(seconds: float) -> void:
 	_jump_buffer_ticks_max = int(ceil(maxf(0.0, seconds) * float(Engine.physics_ticks_per_second)))
 	_jump_buffer_ticks_left = 0
 
-# O Player chama isso 1x por physics tick.
 func poll() -> void:
-	# Axis (-1/0/+1)
 	var a := Input.get_axis(action_left, action_right)
 	snapshot.axis = int(signf(a))
 
 	snapshot.run_held = Input.is_action_pressed(action_run)
+
 	snapshot.down_held = Input.is_action_pressed(action_down)
+	snapshot.down_pressed = Input.is_action_just_pressed(action_down)
+
 	snapshot.glide_held = Input.is_action_pressed(action_glide)
 
-	# Jump release (para jump cut)
+	snapshot.attack_pressed = Input.is_action_just_pressed(action_attack)
+
 	snapshot.jump_released = Input.is_action_just_released(action_jump)
 
-	# Jump buffer:
-	# - se buffer_seconds == 0, vira “just pressed” daquele tick (1 tick de vida)
 	var pressed := Input.is_action_just_pressed(action_jump)
-
 	if pressed:
 		_jump_buffer_ticks_left = 1 if _jump_buffer_ticks_max <= 0 else _jump_buffer_ticks_max
 	else:
