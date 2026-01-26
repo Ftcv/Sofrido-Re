@@ -1,3 +1,5 @@
+CollisionShape2D
+Area2D
 AnimatedSprite2D
 Button
 CheckButton
@@ -11,5 +13,3 @@ TextureRect
 Control
 CharacterBody2D
 Node2D
-AudioStreamPlayer
-Node

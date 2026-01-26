@@ -7,7 +7,9 @@
 radius = 31.0
 height = 62.0
 
-[node name="Inimigo_Geral" type="CharacterBody2D"]
+[node name="Inimigo_Geral" type="CharacterBody2D" groups=["enemies"]]
+collision_layer = 4
+collision_mask = 3
 script = ExtResource("1_2w258")
 metadata/_edit_group_ = true
 

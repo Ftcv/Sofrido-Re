@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3 uid="uid://b8jcm5753ovyd"]
+[gd_scene load_steps=37 format=3 uid="uid://b8jcm5753ovyd"]
 
 [ext_resource type="Script" uid="uid://cl5l35qmqfbkg" path="res://game/player/Player.gd" id="2"]
 [ext_resource type="Resource" uid="uid://dxye4646gc0qf" path="res://game/player/stats/player_stats_default.tres" id="2_38lxl"]
@@ -310,7 +310,12 @@ animations = [{
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_38lxl"]
 height = 25.0
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_o4naa"]
+size = Vector2(12, 29.5)
+
 [node name="Player" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
 slide_on_ceiling = false
 floor_stop_on_slope = false
 script = ExtResource("2")
@@ -320,7 +325,9 @@ stats = ExtResource("2_38lxl")
 texture_filter = 1
 position = Vector2(1, -16)
 sprite_frames = SubResource("SpriteFrames_8cf8e")
-animation = &"death"
+animation = &"attack"
+frame = 3
+frame_progress = 0.5287342
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(1, -13)
@@ -332,3 +339,12 @@ one_shot = true
 
 [node name="PlayerInput" type="Node" parent="."]
 script = ExtResource("4_o4naa")
+
+[node name="AttackHitbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+monitoring = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackHitbox"]
+position = Vector2(10, -15.25)
+shape = SubResource("RectangleShape2D_o4naa")
