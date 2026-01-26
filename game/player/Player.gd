@@ -1,10 +1,4 @@
 # res://game/player/Player.gd
-# Docs oficiais úteis (Godot 4.5):
-# https://docs.godotengine.org/en/4.5/classes/class_characterbody2d.html
-# https://docs.godotengine.org/en/4.5/classes/class_animatedsprite2d.html
-# https://docs.godotengine.org/en/4.5/classes/class_area2d.html
-# https://docs.godotengine.org/en/4.5/classes/class_input.html
-
 extends CharacterBody2D
 
 enum State {
@@ -26,6 +20,7 @@ enum State {
 @export_group("Config")
 @export var debug_print: bool = false
 @export var stats: PlayerStats
+@export var attack_action: StringName = &"attack"
 
 @export_group("HP (MVP)")
 @export var max_hp: int = 3
@@ -38,7 +33,7 @@ enum State {
 @export var ground_pound_start_speed: float = 250.0
 @export var ground_pound_max_speed: float = 520.0
 @export var ground_pound_gravity_multiplier: float = 2.0
-@export var ground_pound_land_seconds: float = 0.16 # segura a animação no chão antes de voltar ao controle
+@export var ground_pound_land_seconds: float = 0.16
 
 @export_group("Crouch (MVP)")
 @export var crouch_speed_cap: float = 120.0
@@ -50,62 +45,63 @@ enum State {
 @export var attack_extend_seconds_on_hit: float = 0.40
 @export var attack_speed_boost_on_hit: float = 90.0
 @export var attack_friction: float = 0.04
-@export var attack_allow_start_still: bool = true # se true, pode atacar mesmo parado (usa facing)
+@export var attack_allow_start_still: bool = true
 
-# Nós
+@export_group("Attack Hitbox Placement")
+@export var attack_hitbox_offset_x: float = 14.0
+@export var attack_hitbox_offset_y: float = 0.0
+
 @onready var coyote_jump_timer: Timer = get_node_or_null("CoyoteTimer")
 @onready var anim_sprite: AnimatedSprite2D = get_node_or_null("AnimatedSprite2D")
 @onready var player_input: PlayerInput = get_node_or_null("PlayerInput")
 @onready var attack_hitbox: Area2D = get_node_or_null("AttackHitbox")
 
-# Estado
 var state: State = State.IDLE
 var is_alive: bool = true
-
-# HP runtime
 var hp: int = 0
+
 var _invuln_left: float = 0.0
 var _hurt_left: float = 0.0
 
-# Run latch (igual ao original)
 var _is_running: bool = false
-
-# Slide runtime (igual ao original)
 var _slide_speed: float = 0.0
 var _slope_direction: int = 0
-
-# Facing
 var _facing: int = 1
-
-# Coyote bookkeeping
 var _was_on_floor: bool = false
-
-# Detectar "apertou down agora"
 var _down_was_held: bool = false
 
-# Ground pound land lock
 var _gp_land_left: float = 0.0
 
-# Attack runtime
 var _attack_left: float = 0.0
 var _attack_dir: int = 1
-var _cartwheel_air_jump_charges: int = 0 # “pulo duplo” do cartwheel (recarrega ao acertar inimigo)
+var _cartwheel_air_jump_charges: int = 0
+
+var _ok: bool = true
 
 
 func _ready() -> void:
+	_ok = _validate_and_init()
+	if not _ok:
+		set_physics_process(false)
+		set_process(false)
+
+
+func _validate_and_init() -> bool:
 	if stats == null:
 		push_warning("Player.stats está vazio. Atribua um PlayerStats .tres no Inspector.")
 		stats = PlayerStats.new()
 
 	if coyote_jump_timer == null:
 		push_error("Faltando Timer 'CoyoteTimer' como child do Player.")
-		return
+		return false
+
 	if anim_sprite == null:
 		push_error("Faltando AnimatedSprite2D 'AnimatedSprite2D' como child do Player.")
-		return
+		return false
+
 	if player_input == null:
 		push_error("Faltando PlayerInput 'PlayerInput' como child do Player.")
-		return
+		return false
 
 	floor_snap_length = stats.floor_snap_length
 
@@ -121,82 +117,62 @@ func _ready() -> void:
 	hp = max_hp
 	is_alive = true
 
-	# AttackHitbox (opcional, mas recomendado)
-	if attack_hitbox != null:
-		attack_hitbox.monitoring = false
-		attack_hitbox.body_entered.connect(_on_attack_body_entered)
-		attack_hitbox.area_entered.connect(_on_attack_area_entered)
-	else:
-		push_warning("Sem 'AttackHitbox' (Area2D). O ataque CARTWHEEL não vai acertar inimigos.")
+	_setup_attack_hitbox()
 
-	# Estado inicial coerente
+	_update_attack_hitbox_position(_facing)
+
 	if is_on_floor():
 		set_state(State.IDLE)
 	else:
 		set_state(State.CAINDO)
 
+	return true
+
+
+func _setup_attack_hitbox() -> void:
+	if attack_hitbox == null:
+		push_warning("Sem 'AttackHitbox' (Area2D). O CARTWHEEL não vai acertar inimigos.")
+		return
+
+	attack_hitbox.monitoring = false
+
+	var cb_body := Callable(self, "_on_attack_body_entered")
+	if not attack_hitbox.body_entered.is_connected(cb_body):
+		attack_hitbox.body_entered.connect(cb_body)
+
+	var cb_area := Callable(self, "_on_attack_area_entered")
+	if not attack_hitbox.area_entered.is_connected(cb_area):
+		attack_hitbox.area_entered.connect(cb_area)
+
 
 func _physics_process(delta: float) -> void:
-	if not is_alive:
+	if not _ok:
 		return
 
 	var dt_ticks := delta * float(Engine.physics_ticks_per_second)
 
-	# Timers de dano
-	if _invuln_left > 0.0:
-		_invuln_left = maxf(0.0, _invuln_left - delta)
-	if _hurt_left > 0.0:
-		_hurt_left = maxf(0.0, _hurt_left - delta)
-		if _hurt_left <= 0.0 and state == State.MACHUCADO:
-			if is_on_floor():
-				set_state(State.IDLE)
-			else:
-				set_state(State.CAINDO)
+	_tick_damage_timers(delta)
+	_tick_ground_pound_land(delta)
+	_tick_attack_timer(delta)
 
-	# Timers do ground pound land
-	if _gp_land_left > 0.0:
-		_gp_land_left = maxf(0.0, _gp_land_left - delta)
-		if _gp_land_left <= 0.0 and state == State.GROUND_POUND_LAND:
-			# volta ao controle normal após "impacto"
-			player_input.poll()
-			var input_after := player_input.snapshot
-			if input_after.down_held:
-				set_state(State.AGACHADO)
-			else:
-				set_state(State.ANDANDO if absf(velocity.x) > 0.1 else State.IDLE)
-
-	# Timers do ataque
-	if _attack_left > 0.0:
-		_attack_left = maxf(0.0, _attack_left - delta)
-		if _attack_left <= 0.0 and state == State.CARTWHEEL:
-			_end_cartwheel()
-
-	# Se morreu, não processa input
 	if state == State.MORTO:
 		_apply_gravity(dt_ticks)
 		move_and_slide()
 		_play_animations()
 		return
 
-	# Snapshot de intenção
 	player_input.poll()
 	var input := player_input.snapshot
 
-	# down "pressed"
 	var down_pressed := input.down_held and not _down_was_held
 	_down_was_held = input.down_held
 
-	# ataque "pressed" (Action no InputMap)
-	var attack_pressed := Input.is_action_just_pressed("attack")
+	var attack_pressed := Input.is_action_just_pressed(attack_action)
 
-	# Facing / run latch (igual)
 	_update_facing(input.axis)
 	_update_run_latch(input)
-
-	# State machine
 	_update_state(input, down_pressed, attack_pressed)
 
-	# Simulação por estado
 	match state:
 		State.DESLIZANDO:
 			_apply_slide(dt_ticks, input)
@@ -213,35 +189,59 @@ func _physics_process(delta: float) -> void:
 		_:
 			_apply_walk(dt_ticks, input)
 
-	# Pulo (coyote + buffer) - bloqueios
 	_apply_jump_logic_cartwheel_aware()
 
-	# Jump cut
 	if input.jump_released and velocity.y < 0.0:
 		velocity.y *= stats.jump_cut_multiplier
 
-	# Gravidade por estado
 	_apply_gravity(dt_ticks)
-
-	# Move
 	move_and_slide()
-
-	# Pós-move (coyote + hooks)
 	_post_move()
-
-	# Animações
 	_play_animations()
 
 	if debug_print:
-		print(
-			"vel:", velocity,
+		print("vel:", velocity,
 			" state:", state,
 			" on_floor:", is_on_floor(),
 			" gp_land:", _gp_land_left,
 			" atk_left:", _attack_left,
-			" atk_air_charges:", _cartwheel_air_jump_charges,
+			" atk_air:", _cartwheel_air_jump_charges,
 			" hp:", hp, "/", max_hp
 		)
+
+
+func _tick_damage_timers(delta: float) -> void:
+	if _invuln_left > 0.0:
+		_invuln_left = maxf(0.0, _invuln_left - delta)
+
+	if _hurt_left > 0.0:
+		_hurt_left = maxf(0.0, _hurt_left - delta)
+		if _hurt_left <= 0.0 and state == State.MACHUCADO:
+			if is_on_floor():
+				set_state(State.IDLE)
+			else:
+				set_state(State.CAINDO)
+
+
+func _tick_ground_pound_land(delta: float) -> void:
+	if _gp_land_left <= 0.0:
+		return
+	_gp_land_left = maxf(0.0, _gp_land_left - delta)
+	if _gp_land_left <= 0.0 and state == State.GROUND_POUND_LAND:
+		player_input.poll()
+		var i := player_input.snapshot
+		if i.down_held:
+			set_state(State.AGACHADO)
+		else:
+			set_state(State.ANDANDO if absf(velocity.x) > 0.1 else State.IDLE)
+
+
+func _tick_attack_timer(delta: float) -> void:
+	if _attack_left <= 0.0:
+		return
+	_attack_left = maxf(0.0, _attack_left - delta)
+	if _attack_left <= 0.0 and state == State.CARTWHEEL:
+		_end_cartwheel()
 
 
 func _update_facing(axis: int) -> void:
@@ -249,15 +249,26 @@ func _update_facing(axis: int) -> void:
 		_facing = -1
 	elif axis > 0:
 		_facing = 1
-	anim_sprite.flip_h = _facing < 0
+
+	if anim_sprite != null:
+		anim_sprite.flip_h = _facing < 0
+
+	# Mantém a hitbox “à frente” mesmo fora do ataque (evita atacar só pra um lado)
+	_update_attack_hitbox_position(_facing)
+
+
+func _update_attack_hitbox_position(dir: int) -> void:
+	if attack_hitbox == null:
+		return
+	attack_hitbox.position.x = attack_hitbox_offset_x * float(dir)
+	attack_hitbox.position.y = attack_hitbox_offset_y
 
 
 func _update_run_latch(input: PlayerInput.Snapshot) -> void:
 	if is_on_floor():
 		_is_running = input.run_held
-	else:
-		if not input.run_held:
-			_is_running = false
+	elif not input.run_held:
+		_is_running = false
 
 
 func _current_speed_cap(input: PlayerInput.Snapshot) -> float:
@@ -267,15 +278,11 @@ func _current_speed_cap(input: PlayerInput.Snapshot) -> float:
 	return cap
 
 
-# ---------------------------
-# State machine
-# ---------------------------
 func set_state(next: State) -> void:
 	if next == state:
 		return
 	if not _can_transition(state, next):
 		return
-
 	_exit_state(state)
 	state = next
 	_enter_state(state)
@@ -284,7 +291,6 @@ func set_state(next: State) -> void:
 func _can_transition(from: State, to: State) -> bool:
 	if from == State.MORTO:
 		return false
-	# durante machucado, bloqueia coisas “agressivas”
 	if from == State.MACHUCADO and to in [State.DESLIZANDO, State.GROUND_POUND, State.CARTWHEEL]:
 		return false
 	return true
@@ -310,11 +316,11 @@ func _enter_state(s: State) -> void:
 			_attack_dir = _facing
 			_cartwheel_air_jump_charges = 0
 
-			# garante uma velocidade inicial “boa”
 			var base := absf(velocity.x)
 			var start := maxf(base, attack_start_speed)
 			velocity.x = start * float(_attack_dir)
 
+			_update_attack_hitbox_position(_attack_dir)
 			_set_attack_hitbox_enabled(true)
 
 
@@ -327,16 +333,13 @@ func _exit_state(s: State) -> void:
 
 
 func _update_state(input: PlayerInput.Snapshot, down_pressed: bool, attack_pressed: bool) -> void:
-	# trava durante o “impacto” do ground pound
 	if state == State.GROUND_POUND_LAND:
 		return
 
-	# 1) Ground pound no ar (prioridade)
-	if state != State.MACHUCADO and state != State.CARTWHEEL and (not is_on_floor()) and down_pressed:
+	if state not in [State.MACHUCADO, State.CARTWHEEL] and (not is_on_floor()) and down_pressed:
 		set_state(State.GROUND_POUND)
 		return
 
-	# 2) Cartwheel (no chão)
 	if state not in [State.MACHUCADO, State.GROUND_POUND, State.GROUND_POUND_LAND] and is_on_floor() and attack_pressed:
 		if input.axis != 0:
 			_facing = input.axis
@@ -346,11 +349,9 @@ func _update_state(input: PlayerInput.Snapshot, down_pressed: bool, attack_press
 			set_state(State.CARTWHEEL)
 			return
 
-	# 3) Enquanto está no cartwheel: mantém até timer acabar
 	if state == State.CARTWHEEL:
 		return
 
-	# 4) Slide (igual original)
 	if state != State.MACHUCADO and _should_slide(input):
 		set_state(State.DESLIZANDO)
 		return
@@ -362,11 +363,9 @@ func _update_state(input: PlayerInput.Snapshot, down_pressed: bool, attack_press
 			set_state(State.CAINDO)
 		return
 
-	# 5) Se está em ground pound e ainda está no ar, mantém
 	if state == State.GROUND_POUND and not is_on_floor():
 		return
 
-	# 6) Aéreo (igual original + glide)
 	if not is_on_floor():
 		if input.glide_held and velocity.y >= 0.0:
 			set_state(State.GLIDANDO)
@@ -374,14 +373,10 @@ func _update_state(input: PlayerInput.Snapshot, down_pressed: bool, attack_press
 			set_state(State.PULANDO if velocity.y < 0.0 else State.CAINDO)
 		return
 
-	# 7) Se acabou de aterrissar do ground pound, _post_move cuida (vira GROUND_POUND_LAND)
-
-	# 8) Chão: agachado
 	if input.down_held:
 		set_state(State.AGACHADO)
 		return
 
-	# 9) Chão normal
 	if absf(velocity.x) > 0.1:
 		set_state(State.ANDANDO)
 	else:
@@ -396,12 +391,8 @@ func _should_slide(input: PlayerInput.Snapshot) -> bool:
 	return absf(get_floor_angle()) > stats.slope_threshold
 
 
-# ---------------------------
-# Movimento
-# ---------------------------
 func _apply_walk(dt_ticks: float, input: PlayerInput.Snapshot) -> void:
 	var cap := _current_speed_cap(input)
-
 	var accel := stats.acceleration
 	var friction := stats.friction
 
@@ -456,7 +447,8 @@ func _apply_slide(dt_ticks: float, input: PlayerInput.Snapshot) -> void:
 		_slope_direction = 1
 
 	velocity.x = _slide_speed * float(_slope_direction) * stats.gravity
-	anim_sprite.flip_h = _slope_direction < 0
+	if anim_sprite != null:
+		anim_sprite.flip_h = _slope_direction < 0
 
 
 func _apply_ground_pound(dt_ticks: float) -> void:
@@ -466,12 +458,10 @@ func _apply_ground_pound(dt_ticks: float) -> void:
 
 
 func _apply_land_lock(dt_ticks: float) -> void:
-	# mantém um “peso” no impacto, sem virar agachado imediatamente
 	_apply_friction(dt_ticks, stats.friction)
 
 
 func _apply_cartwheel(dt_ticks: float) -> void:
-	# mantém velocidade pra frente e dá um “peso” leve
 	var target := clampf(absf(velocity.x), attack_start_speed, attack_max_speed) * float(_attack_dir)
 	velocity.x = lerpf(velocity.x, target, _lerp_factor_per_ticks(0.18, dt_ticks))
 	_apply_friction(dt_ticks, attack_friction)
@@ -479,8 +469,6 @@ func _apply_cartwheel(dt_ticks: float) -> void:
 
 func _end_cartwheel() -> void:
 	_set_attack_hitbox_enabled(false)
-
-	# sai do cartwheel pra um estado coerente
 	if is_on_floor():
 		set_state(State.ANDANDO if absf(velocity.x) > 0.1 else State.IDLE)
 	else:
@@ -493,17 +481,12 @@ func _set_attack_hitbox_enabled(enabled: bool) -> void:
 	attack_hitbox.monitoring = enabled
 
 
-# ---------------------------
-# Pulo (com suporte ao cartwheel air-jump)
-# ---------------------------
 func _apply_jump_logic_cartwheel_aware() -> void:
 	if state in [State.MACHUCADO, State.MORTO, State.GROUND_POUND, State.GROUND_POUND_LAND]:
 		return
-
 	if not player_input.peek_jump():
 		return
 
-	# normal (chão/coyote)
 	if is_on_floor():
 		player_input.consume_jump()
 		_jump_now()
@@ -514,12 +497,10 @@ func _apply_jump_logic_cartwheel_aware() -> void:
 		_jump_now()
 		return
 
-	# “pulo duplo” do cartwheel (no ar)
 	if state == State.CARTWHEEL and _cartwheel_air_jump_charges > 0:
 		player_input.consume_jump()
 		_cartwheel_air_jump_charges -= 1
 		_jump_now()
-		return
 
 
 func _jump_now() -> void:
@@ -528,13 +509,9 @@ func _jump_now() -> void:
 	set_state(State.PULANDO)
 
 
-# ---------------------------
-# Gravidade / Glide
-# ---------------------------
 func _apply_gravity(dt_ticks: float) -> void:
 	if is_on_floor():
 		return
-
 	if state == State.GLIDANDO:
 		velocity.y += (stats.gravity / stats.glide_gravity_divisor) * dt_ticks
 		velocity.y = minf(velocity.y, stats.max_glide_fall_speed)
@@ -548,14 +525,10 @@ func _apply_glide_open_pop() -> void:
 		return
 	if velocity.y <= 0.0:
 		return
-
 	var upward_cap := -stats.glide_open_upward_cap
 	velocity.y = maxf(velocity.y - stats.glide_open_brake, upward_cap)
 
 
-# ---------------------------
-# Pós-move / coyote + hooks
-# ---------------------------
 func _post_move() -> void:
 	if is_on_wall():
 		velocity.x = 0.0
@@ -567,27 +540,20 @@ func _post_move() -> void:
 
 	var now_on_floor := is_on_floor()
 
-	# Coyote
 	if _was_on_floor and not now_on_floor and velocity.y >= 0.0:
 		coyote_jump_timer.start()
 	if now_on_floor and not _was_on_floor:
 		coyote_jump_timer.stop()
 
-	# Se aterrissou após ground pound -> entra no lock (GROUND_POUND_LAND)
 	if now_on_floor and not _was_on_floor and state == State.GROUND_POUND:
 		set_state(State.GROUND_POUND_LAND)
 
-	# Cartwheel: se saiu do chão enquanto atacando, ganha 1 carga de “air jump”
-	# (e hits recarregam essa carga)
 	if (not now_on_floor) and _was_on_floor and state == State.CARTWHEEL:
 		_cartwheel_air_jump_charges = max(_cartwheel_air_jump_charges, 1)
 
 	_was_on_floor = now_on_floor
 
 
-# ---------------------------
-# Ataque: quando o hitbox encosta em algo
-# ---------------------------
 func _on_attack_body_entered(body: Node) -> void:
 	_handle_attack_hit(body)
 
@@ -599,12 +565,9 @@ func _on_attack_area_entered(area: Area2D) -> void:
 func _handle_attack_hit(target: Node) -> void:
 	if state != State.CARTWHEEL:
 		return
-	if target == null:
-		return
-	if target == self:
+	if target == null or target == self:
 		return
 
-	# tenta causar dano
 	var dir := _attack_dir
 	var did_something := false
 
@@ -618,17 +581,15 @@ func _handle_attack_hit(target: Node) -> void:
 	if not did_something:
 		return
 
-	# “DKC feel”: reinicia o timer e dá boost de velocidade ao acertar inimigo
 	_attack_left = maxf(_attack_left, attack_extend_seconds_on_hit)
-	velocity.x = clampf(velocity.x + (attack_speed_boost_on_hit * float(dir)), -attack_max_speed, attack_max_speed)
-
-	# “pulo duplo” do cartwheel: recarrega 1 air jump quando acerta inimigo
+	velocity.x = clampf(
+		velocity.x + (attack_speed_boost_on_hit * float(dir)),
+		-attack_max_speed,
+		attack_max_speed
+	)
 	_cartwheel_air_jump_charges = 1
 
 
-# ---------------------------
-# HP / Dano / Morte
-# ---------------------------
 func take_damage(amount: int, from_dir: int) -> void:
 	if state == State.MORTO:
 		return
@@ -659,12 +620,13 @@ func _die() -> void:
 	is_alive = false
 	set_state(State.MORTO)
 	velocity = Vector2.ZERO
+	_set_attack_hitbox_enabled(false)
 
 
-# ---------------------------
-# Animações (AnimatedSprite2D + SpriteFrames)
-# ---------------------------
 func _play_animations() -> void:
+	if anim_sprite == null:
+		return
+
 	if state == State.MORTO:
 		_play_anim("death")
 		return
@@ -699,15 +661,17 @@ func _play_animations() -> void:
 
 
 func _play_anim(anim_name: String) -> void:
-	if anim_sprite.animation == StringName(anim_name) and anim_sprite.is_playing():
+	var anim_id := StringName(anim_name)
+
+	if anim_sprite.animation == anim_id and anim_sprite.is_playing():
 		return
 	if anim_sprite.sprite_frames == null:
 		return
-	if not anim_sprite.sprite_frames.has_animation(StringName(anim_name)):
+	if not anim_sprite.sprite_frames.has_animation(anim_id):
 		return
-	anim_sprite.play(StringName(anim_name))
+
+	anim_sprite.play(anim_id)
 
 
-# Se algum dia o timeout estiver conectado no editor, esse método evita erro.
 func _on_coyote_timer_timeout() -> void:
 	pass

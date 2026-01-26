@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://f0hhpw784seu"]
+
+[ext_resource type="PackedScene" uid="uid://baj8d0njxt4sk" path="res://game/enemies/EnemyBase.tscn" id="1_7q2m5"]
+[ext_resource type="Script" uid="uid://c767q3bpwvj3y" path="res://game/enemies/SimpleEnemy.gd" id="2_y7k3v"]
+
+[node name="SimpleEnemy" instance=ExtResource("1_7q2m5")]
+script = ExtResource("2_y7k3v")
+speed = 80.0
+turn_at_edges = true
+edge_check_ahead = 10.0
+edge_check_depth = 26.0
+only_check_edges_on_floor = true
+tint_turn_at_edge = Color(1, 0.45, 0.45, 1)
+tint_fall_off = Color(0.55, 1, 0.55, 1)
+use_tint_variant = true
+
+[node name="Sprite2D" parent="." index="0"]
+scale = Vector2(0.546875, 0.546875)
+
+[node name="EdgeRay" type="RayCast2D" parent="." index="2"]

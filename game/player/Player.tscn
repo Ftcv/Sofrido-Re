@@ -326,8 +326,6 @@ texture_filter = 1
 position = Vector2(1, -16)
 sprite_frames = SubResource("SpriteFrames_8cf8e")
 animation = &"attack"
-frame = 3
-frame_progress = 0.5287342
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(1, -13)
@@ -346,5 +344,5 @@ collision_mask = 4
 monitoring = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AttackHitbox"]
-position = Vector2(10, -15.25)
+position = Vector2(0, -15.25)
 shape = SubResource("RectangleShape2D_o4naa")
