@@ -4,3 +4,17 @@ res://game/ui/OptionMenu.gdshader
 res://dev/demo_lvl1.tscn
 res://game/player/Player.tscn
 res://game/player/Player.gd
+res://game/world/triggers/CheckpointArea.gd
+res://game/world/triggers/RespawnManager.gd
+res://game/world/triggers/RespawnZone.gd
+res://game/levels/Playground.tscn
+res://game/ui/MainMenu.gd
+res://game/world/hazards/HazardArea.gd
+res://game/world/hazards/HazardArea.tscn
+res://game/world/checkpoints/Checkpoint.tscn
+res://game/world/checkpoints/Checkpoint.gd
+res://game/systems/Global.gd
+res://game/enemies/EnemyBase.gd
+res://game/levels/Playground.gd
+res://game/systems/scene_manager/SceneManager.gd
+res://game/levels/PlayerCamera2D.gd

@@ -14,7 +14,7 @@ var alive := true
 func _ready() -> void:
 	hp = max_hp
 
-func take_damage(amount: int, from_dir: int) -> void:
+func take_damage(amount: int, _from_dir: int) -> void:
 	if not alive:
 		return
 	hp -= amount

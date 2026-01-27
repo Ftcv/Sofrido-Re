@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://c4jcprwlr75mj"]
+
+[ext_resource type="Script" uid="uid://blx7y1ndadqdw" path="res://game/world/hazards/HazardArea.gd" id="1_l1udw"]
+[ext_resource type="Texture2D" uid="uid://y517o2s45rw5" path="res://icon.png" id="1_y6l0e"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_l1udw"]
+size = Vector2(67, 65)
+
+[node name="HazardArea" type="Area2D"]
+collision_layer = 16
+collision_mask = 2
+script = ExtResource("1_l1udw")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(1, 0.039215688, 0, 1)
+texture = ExtResource("1_y6l0e")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-0.5, -0.5)
+shape = SubResource("RectangleShape2D_l1udw")

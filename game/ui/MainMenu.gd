@@ -1,6 +1,6 @@
 # MainMenu.gd
 extends Control
-@export var new_game_scene: String = "res://dev/demo_lvl1.tscn"
+@export var new_game_scene: String = "res://game/levels/Playground.tscn"
 
 @onready var menu_vbox: VBoxContainer = $CenterContainer/MenuVBox
 @onready var options_menu = $OptionsMenu

@@ -313,7 +313,7 @@ height = 25.0
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_o4naa"]
 size = Vector2(12, 29.5)
 
-[node name="Player" type="CharacterBody2D"]
+[node name="Player" type="CharacterBody2D" groups=["player"]]
 collision_layer = 2
 collision_mask = 5
 slide_on_ceiling = false

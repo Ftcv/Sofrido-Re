@@ -16,6 +16,10 @@ run/main_scene="uid://d4ab52ou0g3w5"
 config/features=PackedStringArray("4.5")
 config/icon="res://playericon.png"
 
+[autoload]
+
+Global="*res://game/systems/Global.gd"
+
 [display]
 
 window/size/viewport_width=640
@@ -42,6 +46,10 @@ folder_colors={
 [global]
 
 vsync=false
+
+[global_group]
+
+player=""
 
 [importer_defaults]
 
@@ -207,9 +215,12 @@ ui_rs={
 
 [layer_names]
 
-2d_physics/layer_1="world"
-2d_physics/layer_2="player"
-2d_physics/layer_3="enemies"
+2d_physics/layer_1="World"
+2d_physics/layer_2="PlayerBody"
+2d_physics/layer_3="EnemyBody"
+2d_physics/layer_4="PlayerHitbox"
+2d_physics/layer_5="DamageSource"
+2d_physics/layer_6="Triggers"
 
 [physics]
 
