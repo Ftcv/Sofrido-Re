@@ -20,7 +20,8 @@ class_name PlayerStats
 @export_group("Pulo / Gravidade")
 @export var jump_speed: float = -225.0
 @export var run_jump_multiplier: float = 1.25
-@export var jump_cut_multiplier: float = 0.5
+@export_range(0.05, 1.0, 0.01) var jump_cut_multiplier: float = 0.5
+@export_range(0.05, 1.0, 0.01) var jump_hold_gravity_multiplier: float = 0.65
 @export var gravity: float = 8.0
 @export var max_fall_speed: float = 300.0
 

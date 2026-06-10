@@ -1,3 +1,5 @@
 res://default_env.tres
 res://game/player/Player.tscn
+res://game/player/player_input.gd
+res://game/player/player_stats.gd
 res://game/player/Player.gd

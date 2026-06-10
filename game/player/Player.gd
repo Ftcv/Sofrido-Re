@@ -45,7 +45,6 @@ enum State {
 @onready var player_input: PlayerInput = get_node_or_null("PlayerInput")
 @onready var attack_hitbox: Area2D = get_node_or_null("AttackHitbox")
 
-# Sensores para a borda (Ledge Balance)
 @onready var floor_probe_l: ShapeCast2D = get_node_or_null("FloorProbeL")
 @onready var floor_probe_r: ShapeCast2D = get_node_or_null("FloorProbeR")
 
@@ -68,6 +67,7 @@ var _slope_direction: int = 0
 var _facing: int = 1
 var _was_on_floor: bool = false
 var _down_was_held: bool = false
+var _jump_cut_available: bool = false
 
 var _attack_dir: int = 1
 var _cartwheel_air_jump_charges: int = 0
@@ -135,6 +135,12 @@ func _validate_and_init() -> bool:
 
 func _setup_attack_hitbox() -> void:
 	if attack_hitbox == null: return
+	
+	# --- NOVO: Isola a Hitbox para não vazar entre instâncias ---
+	var shape_node = attack_hitbox.get_node_or_null("CollisionShape2D")
+	if shape_node and shape_node.shape:
+		shape_node.shape = shape_node.shape.duplicate(true)
+	
 	attack_hitbox.monitoring = false
 	var cb_body := Callable(self, "_on_attack_body_entered")
 	if not attack_hitbox.body_entered.is_connected(cb_body):
@@ -183,8 +189,8 @@ func _physics_process(delta: float) -> void:
 		State.WALL_SLIDE: _apply_wall_slide(dt_ticks, input)
 		_: _apply_walk(dt_ticks, input)
 
-	# APLICA A FÍSICA NA ORDEM CORRETA (Gravidade -> Pulo -> Move)
-	_apply_gravity(dt_ticks)
+	_apply_variable_jump_cut(input.jump_held)
+	_apply_gravity(dt_ticks, input.jump_held)
 	_apply_jump_logic_cartwheel_aware()
 
 	move_and_slide()
@@ -235,9 +241,7 @@ func _tick_timers(delta: float) -> void:
 
 func _update_facing(axis: int) -> void:
 	if _wall_jump_lock_left > 0.0: return
-	
-	if state == State.CARTWHEEL and is_on_floor():
-		return 
+	if state == State.CARTWHEEL and is_on_floor(): return 
 
 	if axis < 0: _facing = -1
 	elif axis > 0: _facing = 1
@@ -246,8 +250,8 @@ func _update_facing(axis: int) -> void:
 
 func _update_attack_hitbox_position(dir: int) -> void:
 	if state == State.CARTWHEEL: return 
-
 	if attack_hitbox == null: return
+	
 	attack_hitbox.position.x = attack_hitbox_offset_x * float(dir)
 	attack_hitbox.position.y = attack_hitbox_offset_y
 
@@ -343,16 +347,18 @@ func _update_state(input: PlayerInput.Snapshot, _down_pressed: bool, attack_pres
 	else:
 		_gp_hold_timer = 0.0
 
-	if state not in [State.MACHUCADO, State.GROUND_POUND, State.GROUND_POUND_LAND] and is_on_floor() and attack_pressed:
-		if input.axis != 0: _facing = input.axis
-		set_state(State.CARTWHEEL)
-		return
-	elif state not in [State.MACHUCADO] and is_on_floor() and attack_pressed and stats.attack_allow_start_still:
-		set_state(State.CARTWHEEL)
-		return
+	# --- NOVO: Uso da whitelist para o Cartwheel ---
+	if _can_start_cartwheel() and is_on_floor() and attack_pressed:
+		var is_moving := (input.axis != 0)
+		if is_moving or stats.attack_allow_start_still:
+			if is_moving: _facing = input.axis
+			set_state(State.CARTWHEEL)
+			return
 
 	if state == State.CARTWHEEL: return
-	if state != State.MACHUCADO and _should_slide(input):
+	
+	# --- NOVO: Uso da whitelist para o Slide ---
+	if _can_slide() and _should_slide(input):
 		set_state(State.DESLIZANDO)
 		return
 
@@ -498,19 +504,30 @@ func _set_attack_hitbox_enabled(enabled: bool) -> void:
 	if attack_hitbox: attack_hitbox.monitoring = enabled
 
 func _apply_jump_logic_cartwheel_aware() -> void:
-	if state in [State.MACHUCADO, State.MORTO, State.GROUND_POUND, State.GROUND_POUND_LAND]: return
-	if not player_input.peek_jump(): return
+	# --- NOVO: Uso da whitelist para o Pulo ---
+	if not _can_jump():
+		return
+
+	if not player_input.peek_jump():
+		return
 
 	if state == State.WALL_SLIDE:
 		player_input.consume_jump()
-		var w_normal_x = get_wall_normal().x
-		if w_normal_x == 0: w_normal_x = -_facing
+
+		var w_normal_x := get_wall_normal().x
+		if w_normal_x == 0.0:
+			w_normal_x = -float(_facing)
+
 		velocity.y = stats.wall_jump_y
 		velocity.x = stats.wall_jump_x * w_normal_x
 		_wall_jump_lock_left = stats.wall_jump_lock_seconds
 		_facing = int(sign(velocity.x))
-		if anim_sprite: anim_sprite.flip_h = _facing < 0
+
+		if anim_sprite:
+			anim_sprite.flip_h = _facing < 0
+
 		_cartwheel_air_jump_charges = 1
+		_jump_cut_available = true
 		set_state(State.PULANDO)
 		return
 
@@ -522,31 +539,90 @@ func _apply_jump_logic_cartwheel_aware() -> void:
 		_cartwheel_air_jump_charges -= 1
 		_jump_now()
 
+
 func _jump_now() -> void:
 	var mult := stats.run_jump_multiplier if _is_running else 1.0
+
 	velocity.y = stats.jump_speed * mult
+	_jump_cut_available = true
 	set_state(State.PULANDO)
 
-func _apply_gravity(dt_ticks: float) -> void:
-	# MANTEMOS APENAS A TRAVA DO WALL SLIDE, DEIXAMOS A GRAVIDADE EMPURRAR NO CHÃO
-	if state == State.WALL_SLIDE: return 
-	
+
+func _apply_variable_jump_cut(jump_held: bool) -> void:
+	if not _jump_cut_available:
+		return
+
+	if is_on_floor() or velocity.y >= 0.0:
+		_jump_cut_available = false
+		return
+
+	if state in [
+		State.GLIDANDO,
+		State.GROUND_POUND,
+		State.GROUND_POUND_LAND,
+		State.MACHUCADO,
+		State.MORTO,
+	]:
+		_jump_cut_available = false
+		return
+
+	if jump_held:
+		return
+
+	# LLM_HINT: Soltar ou não manter pulo durante a subida corta a altura do salto.
+	velocity.y *= stats.jump_cut_multiplier
+	_jump_cut_available = false
+
+
+func _apply_gravity(dt_ticks: float, jump_held: bool = false) -> void:
+	if state == State.WALL_SLIDE:
+		return
+
 	if state == State.GLIDANDO:
 		velocity.y += (stats.gravity / stats.glide_gravity_divisor) * dt_ticks
 		velocity.y = minf(velocity.y, stats.max_glide_fall_speed)
-	else:
-		velocity.y += stats.gravity * dt_ticks
-		velocity.y = minf(velocity.y, stats.max_fall_speed)
+		return
+
+	var gravity_to_apply := stats.gravity
+
+	if _should_use_jump_hold_gravity(jump_held):
+		gravity_to_apply *= stats.jump_hold_gravity_multiplier
+
+	velocity.y += gravity_to_apply * dt_ticks
+	velocity.y = minf(velocity.y, stats.max_fall_speed)
+
+
+func _should_use_jump_hold_gravity(jump_held: bool) -> bool:
+	if not jump_held:
+		return false
+
+	if is_on_floor():
+		return false
+
+	if velocity.y >= 0.0:
+		return false
+
+	if state in [
+		State.GLIDANDO,
+		State.WALL_SLIDE,
+		State.GROUND_POUND,
+		State.GROUND_POUND_LAND,
+		State.MACHUCADO,
+		State.MORTO,
+	]:
+		return false
+
+	return true
+
 
 func _apply_glide_open_pop() -> void:
-	if is_on_floor() or velocity.y <= 0.0: return
-	velocity.y = maxf(velocity.y - stats.glide_open_brake, -stats.glide_open_upward_cap)
+	if is_on_floor() or velocity.y <= 0.0:
+		return
 
+	velocity.y = maxf(velocity.y - stats.glide_open_brake, -stats.glide_open_upward_cap)
 func _post_move() -> void:
 	if is_on_wall() and state != State.WALL_SLIDE: velocity.x = 0.0
 	if is_on_ceiling(): velocity.y = maxf(velocity.y, 0.0)
-
-	# A LINHA velocity.y = 0.0 FOI REMOVIDA PARA O CHÃO REGISTRAR A COLISÃO DO SLIDE.
 
 	var now_on_floor := is_on_floor()
 	if _was_on_floor and not now_on_floor and velocity.y >= 0.0 and state != State.PULANDO:
@@ -589,9 +665,10 @@ func _handle_attack_hit(target: Node) -> void:
 		_cartwheel_air_jump_charges = 1 
 
 func bounce() -> void:
-	if velocity.y > 0: 
+	if velocity.y > 0:
 		velocity.y = stats.enemy_bounce_velocity
 		_cartwheel_air_jump_charges = 1
+		_jump_cut_available = true
 		set_state(State.PULANDO)
 
 func take_damage(amount: int, from_dir: int) -> void:
@@ -630,7 +707,6 @@ func _play_animations() -> void:
 		elif state == State.OLHANDO_CIMA: _play_anim("look_up")
 		elif absf(velocity.x) > 0.1: _play_anim("run" if _is_running else "walk")
 		else: 
-			# CHECAGEM DO LEDGE BALANCE AQUI
 			if _is_on_ledge():
 				_play_anim("ledge_balance")
 			else:
@@ -646,8 +722,34 @@ func _play_anim(anim_name: String) -> void:
 	if anim_sprite.sprite_frames and anim_sprite.sprite_frames.has_animation(anim_id):
 		anim_sprite.play(anim_id)
 
+
 # -----------------------------------------------------------------------------
-# SENSORES E SUPERFÍCIES (RESTAURO COM LEDGE BALANCE)
+# HELPERS POSITIVOS (WHITELISTS)
+# -----------------------------------------------------------------------------
+
+# NOVO: Somente retorna true nos estados onde o jogador DE FATO pode pular
+func _can_jump() -> bool:
+	return state in [
+		State.IDLE, State.ANDANDO, State.AGACHADO, State.OLHANDO_CIMA, 
+		State.DESLIZANDO, State.WALL_SLIDE, State.CARTWHEEL, 
+		State.CAINDO, State.GLIDANDO, State.PULANDO
+	]
+
+# NOVO: Somente retorna true nos estados onde iniciar o Cartwheel é permitido
+func _can_start_cartwheel() -> bool:
+	return state in [
+		State.IDLE, State.ANDANDO, State.AGACHADO, State.OLHANDO_CIMA, State.DESLIZANDO
+	]
+
+# NOVO: Somente retorna true nos estados de solo comuns
+func _can_slide() -> bool:
+	return state in [
+		State.IDLE, State.ANDANDO, State.AGACHADO, State.OLHANDO_CIMA
+	]
+
+
+# -----------------------------------------------------------------------------
+# SENSORES E SUPERFÍCIES
 # -----------------------------------------------------------------------------
 func _get_friction_to_apply() -> float:
 	if is_on_floor() and _is_floor_ice():
@@ -664,7 +766,6 @@ func _is_floor_ice() -> bool:
 	
 	for i in get_slide_collision_count():
 		var col := get_slide_collision(i)
-		# Filtra colisões de "chão" (-0.5 na normal Y)
 		if col.get_normal().y < -0.5:
 			var collider = col.get_collider()
 			if collider is TileMapLayer:
@@ -674,23 +775,17 @@ func _is_floor_ice() -> bool:
 					return true
 	return false
 
-# Verifica os ShapeCast2D para a animação da beirada
-# Verifica os ShapeCasts para a animação da beirada
 func _is_on_ledge() -> bool:
 	if floor_probe_l == null or floor_probe_r == null: 
 		return false
 	
-	# No ShapeCast2D, a função de atualização forçada tem outro nome
 	floor_probe_l.force_shapecast_update()
 	floor_probe_r.force_shapecast_update()
 	
 	var left_colliding = floor_probe_l.is_colliding()
 	var right_colliding = floor_probe_r.is_colliding()
 	
-# Retorna true se apenas UM dos sensores estiver tocando o chão
 	return (left_colliding and not right_colliding) or (right_colliding and not left_colliding)
-		
-	return false
 
 func _is_touching_world_wall() -> bool:
 	if not is_on_wall(): return false
